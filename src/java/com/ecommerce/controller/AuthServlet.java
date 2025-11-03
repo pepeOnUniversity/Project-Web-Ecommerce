@@ -5,6 +5,7 @@ import com.ecommerce.model.User;
 import com.ecommerce.util.PasswordUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -30,6 +31,12 @@ public class AuthServlet extends HttpServlet {
             throws ServletException, IOException {
         
         String path = request.getServletPath();
+        
+        // Xử lý logout qua GET request
+        if ("/logout".equals(path)) {
+            handleLogout(request, response);
+            return;
+        }
         
         // Kiểm tra nếu đã đăng nhập, redirect về home
         HttpSession session = request.getSession(false);
@@ -183,11 +190,40 @@ public class AuthServlet extends HttpServlet {
         
         HttpSession session = request.getSession(false);
         if (session != null) {
+            // Xóa tất cả attributes trong session
+            session.removeAttribute("user");
+            session.removeAttribute("redirectAfterLogin");
+            
+            // Invalidate session
             session.invalidate();
+        }
+        
+        // Xóa JSESSIONID cookie bằng cách tạo cookie mới với maxAge = 0
+        // Xóa với cả path context và root path để đảm bảo
+        String contextPath = request.getContextPath();
+        if (contextPath == null || contextPath.isEmpty()) {
+            contextPath = "/";
+        }
+        
+        // Xóa cookie với context path
+        Cookie deleteCookie = new Cookie("JSESSIONID", "");
+        deleteCookie.setPath(contextPath);
+        deleteCookie.setMaxAge(0);
+        deleteCookie.setHttpOnly(true);
+        response.addCookie(deleteCookie);
+        
+        // Nếu contextPath khác "/", cũng xóa với root path
+        if (!"/".equals(contextPath)) {
+            Cookie deleteRootCookie = new Cookie("JSESSIONID", "");
+            deleteRootCookie.setPath("/");
+            deleteRootCookie.setMaxAge(0);
+            deleteRootCookie.setHttpOnly(true);
+            response.addCookie(deleteRootCookie);
         }
         
         response.sendRedirect(request.getContextPath() + "/home");
     }
 }
+
 
 
