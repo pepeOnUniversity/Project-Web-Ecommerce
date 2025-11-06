@@ -77,15 +77,22 @@
         <c:forEach var="product" items="${featuredProducts}" varStatus="status">
             <div class="col-lg-3 col-md-4 col-sm-6" data-aos="fade-up" data-aos-delay="${status.index * 100}">
                 <div class="card product-card h-100 shadow-sm">
-                    <c:if test="${product.discountPrice != null && product.discountPrice > 0}">
-                        <span class="badge bg-danger position-absolute top-0 start-0 m-2">
-                            -${product.discountPercentage}%
-                        </span>
-                    </c:if>
-                    <img src="${product.imageUrl}" class="card-img-top" alt="${product.productName}" 
-                         style="height: 200px; object-fit: cover;">
+                    <a href="${pageContext.request.contextPath}/product/${product.productUrl}">
+                        <c:if test="${product.discountPrice != null && product.discountPrice > 0}">
+                            <span class="badge bg-danger position-absolute top-0 start-0 m-2">
+                                -${product.discountPercentage}%
+                            </span>
+                        </c:if>
+                        <img src="${product.imageUrl}" class="card-img-top" alt="${product.productName}" 
+                             style="height: 200px; object-fit: cover;">
+                    </a>
                     <div class="card-body d-flex flex-column">
-                        <h6 class="card-title">${product.productName}</h6>
+                        <h6 class="card-title">
+                            <a href="${pageContext.request.contextPath}/product/${product.productUrl}" 
+                               class="text-decoration-none text-dark">
+                                ${product.productName}
+                            </a>
+                        </h6>
                         <div class="mt-auto">
                             <div class="d-flex align-items-center mb-2">
                                 <span class="text-danger fw-bold fs-5">
