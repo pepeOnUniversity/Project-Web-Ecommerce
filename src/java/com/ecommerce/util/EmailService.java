@@ -34,21 +34,27 @@ public class EmailService {
             return value;
         }
         
-        // Default values cho development/testing (có thể comment lại khi deploy production)
+        // Default values cho development/testing
+        // LƯU Ý: Trong production, PHẢI set environment variables hoặc system properties
+        // KHÔNG nên hardcode credentials trong code
         // TODO: Xóa hoặc comment phần này khi deploy production
         switch (name) {
             case "smtp.host":
-                return "smtp.gmail.com";
+                return defaultValue != null ? defaultValue : "smtp.gmail.com";
             case "smtp.port":
-                return "587";
+                return defaultValue != null ? defaultValue : "587";
             case "smtp.user":
-                return "contact.me.dothehung@gmail.com";
+                // KHÔNG có default value - PHẢI cấu hình trong production
+                LOGGER.log(Level.WARNING, "smtp.user chưa được cấu hình. Email service sẽ không hoạt động!");
+                return defaultValue;
             case "smtp.password":
-                return "zmvclfmpuflahnyd"; // App password (đã loại bỏ khoảng trắng)
+                // KHÔNG có default value - PHẢI cấu hình trong production
+                LOGGER.log(Level.WARNING, "smtp.password chưa được cấu hình. Email service sẽ không hoạt động!");
+                return defaultValue;
             case "email.from":
-                return "contact.me.dothehung@gmail.com";
+                return defaultValue;
             case "email.from.name":
-                return "Ecommerce App";
+                return defaultValue != null ? defaultValue : "Ecommerce App";
             default:
                 return defaultValue;
         }

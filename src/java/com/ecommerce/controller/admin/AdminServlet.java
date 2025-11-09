@@ -70,7 +70,7 @@ public class AdminServlet extends HttpServlet {
             BigDecimal totalRevenue = orderDAO.getTotalRevenue();
             int totalOrders = orderDAO.getTotalOrders();
             int totalProducts = productDAO.getAllProducts().size();
-            int totalCustomers = 0; // Cần thêm method count users trong UserDAO
+            int totalCustomers = userDAO.countTotalCustomers();
             
             // Lấy recent orders
             List<Order> recentOrders = orderDAO.getAllOrders();

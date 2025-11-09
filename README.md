@@ -84,13 +84,14 @@ WebEcommerce/
 
 ### Bước 2: Cấu hình Database Connection
 
-Mở file `src/java/com/ecommerce/util/DBConnection.java` và cập nhật:
+**Cho Development (Local):**
+- Code đã có default values cho localhost
+- Có thể chạy ngay mà không cần cấu hình thêm
 
-```java
-private static final String DB_URL = "jdbc:sqlserver://localhost:1433;databaseName=EcommerceDB;encrypt=false;trustServerCertificate=true;";
-private static final String DB_USER = "sa"; // Thay đổi theo cấu hình của bạn
-private static final String DB_PASSWORD = "your_password"; // Thay đổi theo cấu hình của bạn
-```
+**Cho Production:**
+- Xem file `DEPLOYMENT.md` để biết cách cấu hình
+- Sử dụng Environment Variables hoặc System Properties
+- KHÔNG hardcode credentials trong code
 
 ### Bước 3: Thêm Dependencies vào NetBeans
 
@@ -152,12 +153,34 @@ Trong `web.xml`, session timeout được set là 30 phút. Bạn có thể thay
 - `AuthFilter`: Bảo vệ các trang `/cart`, `/checkout`, `/orders`
 - `AdminFilter`: Bảo vệ các trang `/admin/*`
 
+## 🚀 Deploy lên Production
+
+**Dự án đã sẵn sàng để deploy lên production!**
+
+### Các thay đổi đã thực hiện:
+- ✅ Database connection đọc từ environment variables
+- ✅ Email service đọc từ environment variables  
+- ✅ Image storage hỗ trợ external path
+- ✅ Không hardcode credentials trong code
+
+### Hướng dẫn chi tiết:
+Xem file **[DEPLOYMENT.md](DEPLOYMENT.md)** để biết cách:
+- Build WAR file
+- Cấu hình environment variables
+- Deploy lên Tomcat
+- Deploy lên Cloud Platforms (AWS, Azure, GCP)
+- Cấu hình bảo mật
+
+### File cấu hình mẫu:
+- `config.example.properties` - Mẫu cấu hình properties
+- `env.example` - Mẫu environment variables
+
 ## 📝 Ghi chú
 
 - File `schema.sql` chứa cấu trúc database và sample data
 - Password được hash bằng BCrypt với salt rounds = 12
-- Hình ảnh sản phẩm sử dụng placeholder URL, bạn cần thay thế bằng URL thật
-- Một số chức năng như CRUD sản phẩm từ admin cần được hoàn thiện thêm
+- Hình ảnh sản phẩm lưu local trong thư mục `web/images/products/`
+- Code đã hỗ trợ external image storage qua environment variables
 
 ## 🐛 Troubleshooting
 

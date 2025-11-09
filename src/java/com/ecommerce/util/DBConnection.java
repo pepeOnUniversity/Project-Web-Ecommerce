@@ -9,10 +9,43 @@ import java.util.logging.Logger;
 public class DBConnection {
     
     private static DBConnection instance;
-    private static final String DB_URL = "jdbc:sqlserver://localhost:1433;databaseName=EcommerceDB;encrypt=false;trustServerCertificate=true;";
-    private static final String DB_USER = "sa"; 
-    private static final String DB_PASSWORD = "123456"; 
     private static final Logger LOGGER = Logger.getLogger(DBConnection.class.getName());
+    
+    // Database configuration - đọc từ environment variables hoặc system properties
+    private static String getConfig(String name, String defaultValue) {
+        // Thử lấy từ System Properties trước
+        String value = System.getProperty(name);
+        if (value != null && !value.isEmpty()) {
+            return value;
+        }
+        
+        // Fallback: lấy từ Environment Variables (thử cả dấu chấm và dấu gạch dưới)
+        value = System.getenv(name);
+        if (value == null || value.isEmpty()) {
+            // Thử với tên biến không có dấu chấm (Windows không hỗ trợ dấu chấm trong env vars)
+            String envName = name.toUpperCase().replace(".", "_");
+            value = System.getenv(envName);
+        }
+        if (value != null && !value.isEmpty()) {
+            return value;
+        }
+        
+        // Default values cho development (CHỈ DÙNG KHI CHẠY LOCAL)
+        // TODO: Xóa hoặc comment phần này khi deploy production
+        // Trong production, PHẢI set environment variables hoặc system properties
+        if (defaultValue != null) {
+            LOGGER.log(Level.WARNING, "Using default value for " + name + ". " +
+                      "Please set environment variable or system property for production!");
+            return defaultValue;
+        }
+        
+        return null;
+    }
+    
+    private static final String DB_URL = getConfig("db.url", 
+        "jdbc:sqlserver://localhost:1433;databaseName=EcommerceDB;encrypt=false;trustServerCertificate=true;");
+    private static final String DB_USER = getConfig("db.user", "sa"); 
+    private static final String DB_PASSWORD = getConfig("db.password", "123456");
     
     // init JDBC Driver
     static {
@@ -26,6 +59,8 @@ public class DBConnection {
     
     // Private constructor để đảm bảo singleton
     private DBConnection() {
+        // Log cấu hình database (ẩn password)
+        LOGGER.log(Level.INFO, "Database Configuration - URL: " + DB_URL + ", User: " + DB_USER);
     }
     
     /**

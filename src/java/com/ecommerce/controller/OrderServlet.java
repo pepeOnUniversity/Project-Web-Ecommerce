@@ -130,6 +130,27 @@ public class OrderServlet extends HttpServlet {
             return;
         }
         
+        // Kiểm tra stock quantity trước khi đặt hàng
+        // (Stock có thể đã thay đổi từ lúc thêm vào cart)
+        for (CartItem cartItem : cartItems) {
+            if (cartItem.getProduct() == null) {
+                request.setAttribute("error", "Một số sản phẩm trong giỏ hàng không còn tồn tại");
+                showCheckout(request, response, user);
+                return;
+            }
+            
+            int requestedQuantity = cartItem.getQuantity();
+            int availableStock = cartItem.getProduct().getStockQuantity();
+            
+            if (availableStock < requestedQuantity) {
+                request.setAttribute("error", 
+                    String.format("Sản phẩm '%s' chỉ còn %d sản phẩm trong kho (bạn đã chọn %d)", 
+                        cartItem.getProduct().getProductName(), availableStock, requestedQuantity));
+                showCheckout(request, response, user);
+                return;
+            }
+        }
+        
         // Tính tổng tiền
         BigDecimal totalAmount = BigDecimal.ZERO;
         for (CartItem item : cartItems) {

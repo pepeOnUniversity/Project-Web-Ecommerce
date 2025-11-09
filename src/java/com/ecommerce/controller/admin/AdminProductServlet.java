@@ -342,6 +342,14 @@ public class AdminProductServlet extends HttpServlet {
             
             LOGGER.log(Level.INFO, "Found product: " + product.getProductName() + " (ID: " + productId + ")");
             
+            // Kiểm tra xem product có đang được sử dụng trong cart_items hoặc order_items không
+            boolean isInUse = productDAO.isProductInUse(productId);
+            if (isInUse) {
+                LOGGER.log(Level.WARNING, "Cannot delete product " + productId + " because it is in use (cart_items or order_items)");
+                response.sendRedirect(request.getContextPath() + "/admin/products?error=product_in_use");
+                return;
+            }
+            
             // Xóa ảnh nếu có (không quan trọng nếu lỗi, vẫn tiếp tục xóa sản phẩm)
             try {
                 if (product.getImageUrl() != null && !product.getImageUrl().trim().isEmpty()) {

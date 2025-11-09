@@ -200,6 +200,27 @@ public class UserDAO {
     }
     
     /**
+     * Đếm tổng số customers (users có role = 'CUSTOMER')
+     * @return Số lượng customers
+     */
+    public int countTotalCustomers() {
+        String sql = "SELECT COUNT(*) as total FROM users WHERE role = 'CUSTOMER' AND is_active = 1";
+        
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            
+            if (rs.next()) {
+                return rs.getInt("total");
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error counting total customers", e);
+        }
+        
+        return 0;
+    }
+    
+    /**
      * Lấy user theo verification token
      * Thử nhiều cách để tìm token (xử lý cả trường hợp token đã encode/decoded)
      */

@@ -361,9 +361,61 @@ public class ProductDAO {
     }
     
     /**
+     * Kiểm tra product có đang được sử dụng trong cart_items hoặc order_items không
+     * @param productId ID của product
+     * @return true nếu product đang được sử dụng, false nếu không
+     */
+    public boolean isProductInUse(int productId) {
+        String sql = "SELECT COUNT(*) FROM (" +
+                     "  SELECT product_id FROM cart_items WHERE product_id = ? " +
+                     "  UNION ALL " +
+                     "  SELECT product_id FROM order_items WHERE product_id = ? " +
+                     ") AS combined";
+        
+        try (Connection conn = dbConnection.getConnection()) {
+            if (conn == null) {
+                LOGGER.log(Level.SEVERE, "Database connection is NULL when checking if product is in use: " + productId);
+                return false;
+            }
+            
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, productId);
+                ps.setInt(2, productId);
+                
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        int count = rs.getInt(1);
+                        boolean inUse = count > 0;
+                        LOGGER.log(Level.INFO, "Product " + productId + " is " + (inUse ? "in use" : "not in use") + " (count: " + count + ")");
+                        return inUse;
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "SQL error checking if product is in use: " + productId, e);
+            e.printStackTrace();
+            // Nếu có lỗi, giả sử product đang được sử dụng để an toàn
+            return true;
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Unexpected error checking if product is in use: " + productId, e);
+            e.printStackTrace();
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /**
      * Xóa product (soft delete)
+     * Không cho phép xóa nếu product đang được sử dụng trong cart_items hoặc order_items
      */
     public boolean deleteProduct(int productId) {
+        // Kiểm tra xem product có đang được sử dụng không
+        if (isProductInUse(productId)) {
+            LOGGER.log(Level.WARNING, "Cannot delete product " + productId + " because it is in use (cart_items or order_items)");
+            return false;
+        }
+        
         String sql = "UPDATE products SET is_active = 0 WHERE product_id = ?";
         
         LOGGER.log(Level.INFO, "Deleting product (soft delete) with ID: " + productId);

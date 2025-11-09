@@ -48,6 +48,9 @@
                 <c:when test="${param.error == 'delete_failed'}">
                     <i class="fas fa-exclamation-circle me-2"></i>Xóa sản phẩm thất bại!
                 </c:when>
+                <c:when test="${param.error == 'product_in_use'}">
+                    <i class="fas fa-exclamation-circle me-2"></i>Không thể xóa sản phẩm này vì sản phẩm đang được sử dụng trong giỏ hàng hoặc đơn hàng!
+                </c:when>
                 <c:when test="${param.error == 'no_image'}">
                     <i class="fas fa-exclamation-circle me-2"></i>Vui lòng chọn ảnh để cập nhật!
                 </c:when>
