@@ -10,6 +10,43 @@
 <div class="container-fluid my-4">
     <h2 class="mb-4"><i class="fas fa-chart-line me-2"></i>Admin Dashboard</h2>
     
+    <!-- Admin Navigation Menu -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <a href="${pageContext.request.contextPath}/admin/products" class="text-decoration-none">
+                <div class="card shadow-sm border-primary h-100 hover-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-box fa-3x text-primary mb-3"></i>
+                        <h5 class="card-title">Quản lý sản phẩm</h5>
+                        <p class="card-text text-muted">Thêm, sửa, xóa sản phẩm</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a href="${pageContext.request.contextPath}/admin/orders" class="text-decoration-none">
+                <div class="card shadow-sm border-success h-100 hover-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-shopping-bag fa-3x text-success mb-3"></i>
+                        <h5 class="card-title">Quản lý đơn hàng</h5>
+                        <p class="card-text text-muted">Xem và cập nhật đơn hàng</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a href="${pageContext.request.contextPath}/admin" class="text-decoration-none">
+                <div class="card shadow-sm border-info h-100 hover-card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-chart-line fa-3x text-info mb-3"></i>
+                        <h5 class="card-title">Thống kê</h5>
+                        <p class="card-text text-muted">Xem báo cáo và thống kê</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+    
     <!-- Statistics Cards -->
     <div class="row g-4 mb-4">
         <div class="col-md-3">

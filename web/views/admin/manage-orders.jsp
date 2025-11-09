@@ -8,6 +8,14 @@
 <jsp:include page="../common/navbar.jsp"/>
 
 <div class="container-fluid my-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="${pageContext.request.contextPath}/admin"><i class="fas fa-home me-1"></i>Dashboard</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Quản lý đơn hàng</li>
+        </ol>
+    </nav>
+    
     <h2 class="mb-4"><i class="fas fa-shopping-bag me-2"></i>Quản lý đơn hàng</h2>
     
     <div class="card shadow-sm">

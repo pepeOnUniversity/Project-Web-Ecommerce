@@ -55,6 +55,18 @@ main {
     transform: translateY(-5px);
 }
 
+/* Admin Navigation Cards */
+.hover-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.hover-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.15) !important;
+    border-width: 2px !important;
+}
+
 /* Buttons */
 .btn {
     transition: all 0.3s ease;
