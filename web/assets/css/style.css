@@ -40,6 +40,12 @@ main {
 
 .product-card img {
     transition: transform 0.3s ease;
+    width: 100%;
+    max-width: 100%;
+    height: 200px;
+    object-fit: contain;
+    object-position: center;
+    background-color: #f8f9fa;
 }
 
 .product-card:hover img {

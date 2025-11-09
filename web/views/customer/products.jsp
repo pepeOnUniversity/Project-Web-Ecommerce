@@ -81,7 +81,6 @@
                                     </span>
                                 </c:if>
                                 <img src="${product.displayImageUrl}" class="card-img-top" alt="${product.productName}" 
-                                     style="height: 200px; object-fit: cover;" 
                                      onerror="if(this.src.indexOf('data:image') === -1) this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\'%3E%3Crect fill=\'%23ddd\' width=\'200\' height=\'200\'/%3E%3Ctext fill=\'%23999\' font-family=\'sans-serif\' font-size=\'14\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\'%3ENo Image%3C/text%3E%3C/svg%3E'">
                             </a>
                             <div class="card-body d-flex flex-column">

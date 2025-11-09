@@ -85,8 +85,7 @@
                                 -${product.discountPercentage}%
                             </span>
                         </c:if>
-                        <img src="${product.imageUrl}" class="card-img-top" alt="${product.productName}" 
-                             style="height: 200px; object-fit: cover;">
+                        <img src="${product.imageUrl}" class="card-img-top" alt="${product.productName}">
                     </a>
                     <div class="card-body d-flex flex-column">
                         <h6 class="card-title">

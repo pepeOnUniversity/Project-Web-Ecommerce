@@ -71,8 +71,7 @@
                     <div class="col-md-3">
                         <div class="card product-card h-100 shadow-sm">
                             <a href="${pageContext.request.contextPath}/product/${related.productUrl}">
-                                <img src="${related.imageUrl}" class="card-img-top" alt="${related.productName}" 
-                                     style="height: 200px; object-fit: cover;">
+                                <img src="${related.imageUrl}" class="card-img-top" alt="${related.productName}">
                             </a>
                             <div class="card-body">
                                 <h6 class="card-title">
