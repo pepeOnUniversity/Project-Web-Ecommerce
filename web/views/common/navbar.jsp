@@ -8,8 +8,14 @@
     // Đếm số lượng cart items (cần load từ CartDAO)
     int cartCount = 0;
     if (user != null) {
-        com.ecommerce.dao.CartDAO cartDAO = new com.ecommerce.dao.CartDAO();
-        cartCount = cartDAO.getCartItemsByUserId(user.getUserId()).size();
+        try {
+            com.ecommerce.dao.CartDAO cartDAO = new com.ecommerce.dao.CartDAO();
+            cartCount = cartDAO.getCartItemsByUserId(user.getUserId()).size();
+        } catch (Exception e) {
+            // Nếu có lỗi, chỉ log và giữ cartCount = 0
+            e.printStackTrace();
+            cartCount = 0;
+        }
     }
     pageContext.setAttribute("cartCount", cartCount);
 %>
@@ -81,6 +87,7 @@
         </div>
     </div>
 </nav>
+
 
 
 

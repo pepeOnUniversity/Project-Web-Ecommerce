@@ -5,11 +5,13 @@ import com.ecommerce.dao.ProductDAO;
 import com.ecommerce.model.CartItem;
 import com.ecommerce.model.User;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.HashMap;
@@ -21,6 +23,7 @@ import java.util.Map;
  * Xử lý giỏ hàng với AJAX support
  */
 @WebServlet(name = "CartServlet", urlPatterns = {"/cart", "/cart/*"})
+@MultipartConfig
 public class CartServlet extends HttpServlet {
     
     private CartDAO cartDAO;
@@ -54,20 +57,38 @@ public class CartServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         
-        HttpSession session = request.getSession(false);
-        User user = getCurrentUser(session);
+        // Đảm bảo luôn trả về JSON
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
         
-        if (user == null) {
-            sendJsonResponse(response, false, "Bạn cần đăng nhập để thêm sản phẩm vào giỏ hàng", null);
-            return;
-        }
-        
-        String action = request.getParameter("action");
-        
-        if ("add".equals(action)) {
-            handleAddToCart(request, response, user);
-        } else {
-            sendJsonResponse(response, false, "Invalid action", null);
+        try {
+            HttpSession session = request.getSession(false);
+            User user = getCurrentUser(session);
+            
+            if (user == null) {
+                sendJsonResponse(response, false, "Bạn cần đăng nhập để thêm sản phẩm vào giỏ hàng", null);
+                return;
+            }
+            
+            String action = request.getParameter("action");
+            
+            // Xử lý trường hợp action null hoặc empty
+            if (action == null || action.trim().isEmpty()) {
+                sendJsonResponse(response, false, "Thiếu tham số action", null);
+                return;
+            }
+            
+            if ("add".equals(action)) {
+                handleAddToCart(request, response, user);
+            } else {
+                sendJsonResponse(response, false, "Invalid action: " + action, null);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            // Đảm bảo response chưa bị commit
+            if (!response.isCommitted()) {
+                sendJsonResponse(response, false, "Có lỗi xảy ra: " + e.getMessage(), null);
+            }
         }
     }
     
@@ -75,30 +96,52 @@ public class CartServlet extends HttpServlet {
     protected void doPut(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         
-        HttpSession session = request.getSession(false);
-        User user = getCurrentUser(session);
+        // Đảm bảo luôn trả về JSON
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
         
-        if (user == null) {
-            sendJsonResponse(response, false, "Bạn cần đăng nhập", null);
-            return;
+        try {
+            HttpSession session = request.getSession(false);
+            User user = getCurrentUser(session);
+            
+            if (user == null) {
+                sendJsonResponse(response, false, "Bạn cần đăng nhập", null);
+                return;
+            }
+            
+            handleUpdateCart(request, response, user);
+        } catch (Exception e) {
+            e.printStackTrace();
+            if (!response.isCommitted()) {
+                sendJsonResponse(response, false, "Có lỗi xảy ra: " + e.getMessage(), null);
+            }
         }
-        
-        handleUpdateCart(request, response, user);
     }
     
     @Override
     protected void doDelete(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         
-        HttpSession session = request.getSession(false);
-        User user = getCurrentUser(session);
+        // Đảm bảo luôn trả về JSON
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
         
-        if (user == null) {
-            sendJsonResponse(response, false, "Bạn cần đăng nhập", null);
-            return;
+        try {
+            HttpSession session = request.getSession(false);
+            User user = getCurrentUser(session);
+            
+            if (user == null) {
+                sendJsonResponse(response, false, "Bạn cần đăng nhập", null);
+                return;
+            }
+            
+            handleRemoveFromCart(request, response, user);
+        } catch (Exception e) {
+            e.printStackTrace();
+            if (!response.isCommitted()) {
+                sendJsonResponse(response, false, "Có lỗi xảy ra: " + e.getMessage(), null);
+            }
         }
-        
-        handleRemoveFromCart(request, response, user);
     }
     
     /**
@@ -108,8 +151,16 @@ public class CartServlet extends HttpServlet {
             throws IOException {
         
         try {
-            int productId = Integer.parseInt(request.getParameter("productId"));
-            int quantity = Integer.parseInt(request.getParameter("quantity"));
+            String productIdStr = request.getParameter("productId");
+            String quantityStr = request.getParameter("quantity");
+            
+            if (productIdStr == null || quantityStr == null) {
+                sendJsonResponse(response, false, "Thiếu thông tin cần thiết", null);
+                return;
+            }
+            
+            int productId = Integer.parseInt(productIdStr);
+            int quantity = Integer.parseInt(quantityStr);
             
             if (quantity <= 0) {
                 sendJsonResponse(response, false, "Số lượng phải lớn hơn 0", null);
@@ -153,8 +204,18 @@ public class CartServlet extends HttpServlet {
             throws IOException {
         
         try {
-            int cartItemId = Integer.parseInt(request.getParameter("cartItemId"));
-            int quantity = Integer.parseInt(request.getParameter("quantity"));
+            // Đọc parameters từ request body cho PUT request
+            Map<String, String> params = parseRequestBody(request);
+            String cartItemIdStr = params.get("cartItemId");
+            String quantityStr = params.get("quantity");
+            
+            if (cartItemIdStr == null || quantityStr == null) {
+                sendJsonResponse(response, false, "Thiếu thông tin cần thiết", null);
+                return;
+            }
+            
+            int cartItemId = Integer.parseInt(cartItemIdStr);
+            int quantity = Integer.parseInt(quantityStr);
             
             if (quantity <= 0) {
                 sendJsonResponse(response, false, "Số lượng phải lớn hơn 0", null);
@@ -168,7 +229,7 @@ public class CartServlet extends HttpServlet {
             }
             
             // Kiểm tra stock
-            if (cartItem.getProduct().getStockQuantity() < quantity) {
+            if (cartItem.getProduct() == null || cartItem.getProduct().getStockQuantity() < quantity) {
                 sendJsonResponse(response, false, "Số lượng trong kho không đủ", null);
                 return;
             }
@@ -197,7 +258,16 @@ public class CartServlet extends HttpServlet {
             throws IOException {
         
         try {
-            int cartItemId = Integer.parseInt(request.getParameter("cartItemId"));
+            // Đọc parameters từ request body cho DELETE request
+            Map<String, String> params = parseRequestBody(request);
+            String cartItemIdStr = params.get("cartItemId");
+            
+            if (cartItemIdStr == null) {
+                sendJsonResponse(response, false, "Thiếu thông tin cần thiết", null);
+                return;
+            }
+            
+            int cartItemId = Integer.parseInt(cartItemIdStr);
             
             CartItem cartItem = cartDAO.getCartItemById(cartItemId);
             if (cartItem == null || cartItem.getUserId() != user.getUserId()) {
@@ -268,6 +338,47 @@ public class CartServlet extends HttpServlet {
         PrintWriter out = response.getWriter();
         out.print(json.toString());
         out.flush();
+    }
+    
+    /**
+     * Parse request body để lấy parameters (cho PUT và DELETE requests)
+     */
+    private Map<String, String> parseRequestBody(HttpServletRequest request) throws IOException {
+        Map<String, String> params = new HashMap<>();
+        
+        // Đọc request body
+        StringBuilder body = new StringBuilder();
+        BufferedReader reader = request.getReader();
+        String line;
+        try {
+            while ((line = reader.readLine()) != null) {
+                body.append(line);
+            }
+        } finally {
+            if (reader != null) {
+                reader.close();
+            }
+        }
+        
+        // Parse URL-encoded parameters
+        String bodyStr = body.toString();
+        if (bodyStr != null && !bodyStr.isEmpty()) {
+            String[] pairs = bodyStr.split("&");
+            for (String pair : pairs) {
+                String[] keyValue = pair.split("=", 2);
+                if (keyValue.length == 2) {
+                    try {
+                        String key = java.net.URLDecoder.decode(keyValue[0], "UTF-8");
+                        String value = java.net.URLDecoder.decode(keyValue[1], "UTF-8");
+                        params.put(key, value);
+                    } catch (Exception e) {
+                        // Ignore invalid pairs
+                    }
+                }
+            }
+        }
+        
+        return params;
     }
     
     /**

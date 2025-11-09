@@ -15,6 +15,8 @@ public class User {
     private String address;
     private String role; // "CUSTOMER" or "ADMIN"
     private boolean isActive;
+    private boolean emailVerified;
+    private String verificationToken;
     private Timestamp createdAt;
     
     // Constructors
@@ -30,6 +32,7 @@ public class User {
         this.address = address;
         this.role = "CUSTOMER";
         this.isActive = true;
+        this.emailVerified = false;
     }
     
     // Getters and Setters
@@ -115,6 +118,22 @@ public class User {
     
     public boolean isAdmin() {
         return "ADMIN".equalsIgnoreCase(role);
+    }
+    
+    public boolean isEmailVerified() {
+        return emailVerified;
+    }
+    
+    public void setEmailVerified(boolean emailVerified) {
+        this.emailVerified = emailVerified;
+    }
+    
+    public String getVerificationToken() {
+        return verificationToken;
+    }
+    
+    public void setVerificationToken(String verificationToken) {
+        this.verificationToken = verificationToken;
     }
 }
 

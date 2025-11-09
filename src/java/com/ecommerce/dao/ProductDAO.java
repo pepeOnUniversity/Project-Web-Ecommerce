@@ -2,6 +2,7 @@ package com.ecommerce.dao;
 
 import com.ecommerce.model.Product;
 import com.ecommerce.util.DBConnection;
+import com.ecommerce.util.SlugUtil;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -32,6 +33,45 @@ public class ProductDAO {
         List<Product> products = new ArrayList<>();
         String sql = "SELECT * FROM products WHERE is_active = 1 ORDER BY product_id DESC";
         
+        LOGGER.info("Getting all active products");
+        
+        try (Connection conn = dbConnection.getConnection()) {
+            if (conn == null) {
+                LOGGER.severe("Database connection is NULL!");
+                return products;
+            }
+            
+            try (PreparedStatement ps = conn.prepareStatement(sql);
+                 ResultSet rs = ps.executeQuery()) {
+                
+                while (rs.next()) {
+                    try {
+                        products.add(mapResultSetToProduct(rs));
+                    } catch (SQLException e) {
+                        LOGGER.log(Level.SEVERE, "Error mapping product from ResultSet", e);
+                    }
+                }
+                LOGGER.info("Total active products found: " + products.size());
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error getting all products", e);
+            e.printStackTrace();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Unexpected error getting all products", e);
+            e.printStackTrace();
+        }
+        
+        return products;
+    }
+    
+    /**
+     * Lấy tất cả products (kể cả inactive) - dùng cho admin
+     * @return 
+     */
+    public List<Product> getAllProductsForAdmin() {
+        List<Product> products = new ArrayList<>();
+        String sql = "SELECT * FROM products ORDER BY product_id DESC";
+        
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -40,14 +80,14 @@ public class ProductDAO {
                 products.add(mapResultSetToProduct(rs));
             }
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error getting all products", e);
+            LOGGER.log(Level.SEVERE, "Error getting all products for admin", e);
         }
         
         return products;
     }
     
     /**
-     * Lấy product theo ID
+     * Lấy product theo ID (chỉ lấy active)
      */
     public Product getProductById(int productId) {
         String sql = "SELECT * FROM products WHERE product_id = ? AND is_active = 1";
@@ -70,24 +110,122 @@ public class ProductDAO {
     }
     
     /**
-     * Lấy featured products
+     * Lấy product theo slug
      */
-    public List<Product> getFeaturedProducts(int limit) {
-        List<Product> products = new ArrayList<>();
-        String sql = "SELECT TOP (?) * FROM products WHERE is_featured = 1 AND is_active = 1 ORDER BY product_id DESC";
+    public Product getProductBySlug(String slug) {
+        String sql = "SELECT * FROM products WHERE slug = ? AND is_active = 1";
         
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             
-            ps.setInt(1, limit);
+            ps.setString(1, slug);
             
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    products.add(mapResultSetToProduct(rs));
+                if (rs.next()) {
+                    return mapResultSetToProduct(rs);
                 }
             }
         } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error getting product by slug: " + slug, e);
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Kiểm tra slug đã tồn tại chưa (cho product khác)
+     */
+    public boolean isSlugExists(String slug, Integer excludeProductId) {
+        String sql = "SELECT COUNT(*) FROM products WHERE slug = ?";
+        if (excludeProductId != null) {
+            sql += " AND product_id != ?";
+        }
+        
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setString(1, slug);
+            if (excludeProductId != null) {
+                ps.setInt(2, excludeProductId);
+            }
+            
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error checking slug existence: " + slug, e);
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Lấy featured products
+     */
+    public Product getProductByIdForAdmin(int productId) {
+        String sql = "SELECT * FROM products WHERE product_id = ?";
+        
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setInt(1, productId);
+            
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapResultSetToProduct(rs);
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error getting product by ID for admin: " + productId, e);
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Lấy featured products
+     */
+    public List<Product> getFeaturedProducts(int limit) {
+        List<Product> products = new ArrayList<>();
+        // SQL Server không hỗ trợ TOP với parameter, phải dùng string concatenation hoặc cách khác
+        // Sử dụng cách an toàn hơn: lấy tất cả rồi limit trong code, hoặc dùng OFFSET/FETCH
+        String sql = "SELECT * FROM products WHERE is_featured = 1 AND is_active = 1 ORDER BY product_id DESC";
+        
+        LOGGER.info("Getting featured products with limit: " + limit);
+        LOGGER.info("SQL: " + sql);
+        
+        try (Connection conn = dbConnection.getConnection()) {
+            if (conn == null) {
+                LOGGER.severe("Database connection is NULL!");
+                return products;
+            }
+            LOGGER.info("Database connection successful");
+            
+            try (PreparedStatement ps = conn.prepareStatement(sql);
+                 ResultSet rs = ps.executeQuery()) {
+                
+                LOGGER.info("Executing query...");
+                int count = 0;
+                while (rs.next() && count < limit) {
+                    try {
+                        Product product = mapResultSetToProduct(rs);
+                        products.add(product);
+                        count++;
+                        LOGGER.info("Added product: " + product.getProductId() + " - " + product.getProductName());
+                    } catch (SQLException e) {
+                        LOGGER.log(Level.SEVERE, "Error mapping product from ResultSet", e);
+                    }
+                }
+                LOGGER.info("Total featured products found: " + products.size());
+            }
+        } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error getting featured products", e);
+            e.printStackTrace();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Unexpected error getting featured products", e);
+            e.printStackTrace();
         }
         
         return products;
@@ -149,22 +287,31 @@ public class ProductDAO {
      * Thêm product mới
      */
     public boolean addProduct(Product product) {
-        String sql = "INSERT INTO products (product_name, description, price, discount_price, " +
+        // Auto-generate slug nếu chưa có
+        String slug = product.getSlug();
+        if (slug == null || slug.trim().isEmpty()) {
+            String baseSlug = SlugUtil.generateSlug(product.getProductName());
+            slug = SlugUtil.generateUniqueSlug(baseSlug, s -> isSlugExists(s, null));
+            product.setSlug(slug);
+        }
+        
+        String sql = "INSERT INTO products (product_name, slug, description, price, discount_price, " +
                      "stock_quantity, category_id, image_url, is_featured, is_active) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             
             ps.setString(1, product.getProductName());
-            ps.setString(2, product.getDescription());
-            ps.setBigDecimal(3, product.getPrice());
-            ps.setBigDecimal(4, product.getDiscountPrice());
-            ps.setInt(5, product.getStockQuantity());
-            ps.setInt(6, product.getCategoryId());
-            ps.setString(7, product.getImageUrl());
-            ps.setBoolean(8, product.isFeatured());
-            ps.setBoolean(9, product.isActive());
+            ps.setString(2, slug);
+            ps.setString(3, product.getDescription());
+            ps.setBigDecimal(4, product.getPrice());
+            ps.setBigDecimal(5, product.getDiscountPrice());
+            ps.setInt(6, product.getStockQuantity());
+            ps.setInt(7, product.getCategoryId());
+            ps.setString(8, product.getImageUrl());
+            ps.setBoolean(9, product.isFeatured());
+            ps.setBoolean(10, product.isActive());
             
             int rowsAffected = ps.executeUpdate();
             return rowsAffected > 0;
@@ -178,7 +325,15 @@ public class ProductDAO {
      * Cập nhật product
      */
     public boolean updateProduct(Product product) {
-        String sql = "UPDATE products SET product_name = ?, description = ?, price = ?, " +
+        // Auto-generate slug nếu chưa có hoặc tên sản phẩm đã thay đổi
+        String slug = product.getSlug();
+        if (slug == null || slug.trim().isEmpty()) {
+            String baseSlug = SlugUtil.generateSlug(product.getProductName());
+            slug = SlugUtil.generateUniqueSlug(baseSlug, s -> isSlugExists(s, product.getProductId()));
+            product.setSlug(slug);
+        }
+        
+        String sql = "UPDATE products SET product_name = ?, slug = ?, description = ?, price = ?, " +
                      "discount_price = ?, stock_quantity = ?, category_id = ?, image_url = ?, " +
                      "is_featured = ?, is_active = ? WHERE product_id = ?";
         
@@ -186,15 +341,16 @@ public class ProductDAO {
              PreparedStatement ps = conn.prepareStatement(sql)) {
             
             ps.setString(1, product.getProductName());
-            ps.setString(2, product.getDescription());
-            ps.setBigDecimal(3, product.getPrice());
-            ps.setBigDecimal(4, product.getDiscountPrice());
-            ps.setInt(5, product.getStockQuantity());
-            ps.setInt(6, product.getCategoryId());
-            ps.setString(7, product.getImageUrl());
-            ps.setBoolean(8, product.isFeatured());
-            ps.setBoolean(9, product.isActive());
-            ps.setInt(10, product.getProductId());
+            ps.setString(2, slug);
+            ps.setString(3, product.getDescription());
+            ps.setBigDecimal(4, product.getPrice());
+            ps.setBigDecimal(5, product.getDiscountPrice());
+            ps.setInt(6, product.getStockQuantity());
+            ps.setInt(7, product.getCategoryId());
+            ps.setString(8, product.getImageUrl());
+            ps.setBoolean(9, product.isFeatured());
+            ps.setBoolean(10, product.isActive());
+            ps.setInt(11, product.getProductId());
             
             int rowsAffected = ps.executeUpdate();
             return rowsAffected > 0;
@@ -210,15 +366,35 @@ public class ProductDAO {
     public boolean deleteProduct(int productId) {
         String sql = "UPDATE products SET is_active = 0 WHERE product_id = ?";
         
-        try (Connection conn = dbConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        LOGGER.log(Level.INFO, "Deleting product (soft delete) with ID: " + productId);
+        
+        try (Connection conn = dbConnection.getConnection()) {
+            if (conn == null) {
+                LOGGER.log(Level.SEVERE, "Database connection is NULL when trying to delete product: " + productId);
+                return false;
+            }
             
-            ps.setInt(1, productId);
-            
-            int rowsAffected = ps.executeUpdate();
-            return rowsAffected > 0;
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, productId);
+                
+                int rowsAffected = ps.executeUpdate();
+                LOGGER.log(Level.INFO, "Delete product query executed. Rows affected: " + rowsAffected + " for product ID: " + productId);
+                
+                if (rowsAffected > 0) {
+                    LOGGER.log(Level.INFO, "Successfully soft deleted product: " + productId);
+                    return true;
+                } else {
+                    LOGGER.log(Level.WARNING, "No rows affected when deleting product: " + productId + ". Product may not exist.");
+                    return false;
+                }
+            }
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error deleting product", e);
+            LOGGER.log(Level.SEVERE, "SQL error deleting product: " + productId, e);
+            e.printStackTrace();
+            return false;
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Unexpected error deleting product: " + productId, e);
+            e.printStackTrace();
             return false;
         }
     }
@@ -244,12 +420,47 @@ public class ProductDAO {
     }
     
     /**
+     * Chỉ cập nhật image_url của sản phẩm
+     * Dùng khi admin chỉ muốn thay đổi ảnh mà không cần sửa thông tin khác
+     * 
+     * @param productId ID sản phẩm
+     * @param imageUrl Đường dẫn ảnh mới
+     * @return true nếu cập nhật thành công
+     */
+    public boolean updateImageUrl(int productId, String imageUrl) {
+        String sql = "UPDATE products SET image_url = ? WHERE product_id = ?";
+        
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setString(1, imageUrl);
+            ps.setInt(2, productId);
+            
+            int rowsAffected = ps.executeUpdate();
+            LOGGER.log(Level.INFO, "Updated image_url for product " + productId + ": " + imageUrl);
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error updating image_url for product: " + productId, e);
+            return false;
+        }
+    }
+    
+    /**
      * Map ResultSet thành Product object
      */
     private Product mapResultSetToProduct(ResultSet rs) throws SQLException {
         Product product = new Product();
         product.setProductId(rs.getInt("product_id"));
         product.setProductName(rs.getString("product_name"));
+        
+        // Slug có thể null nếu chưa migrate dữ liệu cũ
+        try {
+            product.setSlug(rs.getString("slug"));
+        } catch (SQLException e) {
+            // Nếu column slug chưa tồn tại, set null
+            product.setSlug(null);
+        }
+        
         product.setDescription(rs.getString("description"));
         product.setPrice(rs.getBigDecimal("price"));
         product.setDiscountPrice(rs.getBigDecimal("discount_price"));

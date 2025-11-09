@@ -72,18 +72,19 @@
                 <c:forEach var="product" items="${products}">
                     <div class="col-lg-3 col-md-4 col-sm-6" data-aos="fade-up">
                         <div class="card product-card h-100 shadow-sm">
-                            <a href="${pageContext.request.contextPath}/product/${product.productId}">
+                            <a href="${pageContext.request.contextPath}/product/${product.productUrl}">
                                 <c:if test="${product.discountPrice != null && product.discountPrice > 0}">
                                     <span class="badge bg-danger position-absolute top-0 start-0 m-2">
                                         -${product.discountPercentage}%
                                     </span>
                                 </c:if>
-                                <img src="${product.imageUrl}" class="card-img-top" alt="${product.productName}" 
-                                     style="height: 200px; object-fit: cover;">
+                                <img src="${product.displayImageUrl}" class="card-img-top" alt="${product.productName}" 
+                                     style="height: 200px; object-fit: cover;" 
+                                     onerror="if(this.src.indexOf('data:image') === -1) this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\'%3E%3Crect fill=\'%23ddd\' width=\'200\' height=\'200\'/%3E%3Ctext fill=\'%23999\' font-family=\'sans-serif\' font-size=\'14\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\'%3ENo Image%3C/text%3E%3C/svg%3E'">
                             </a>
                             <div class="card-body d-flex flex-column">
                                 <h6 class="card-title">
-                                    <a href="${pageContext.request.contextPath}/product/${product.productId}" 
+                                    <a href="${pageContext.request.contextPath}/product/${product.productUrl}" 
                                        class="text-decoration-none text-dark">
                                         ${product.productName}
                                     </a>
@@ -114,6 +115,7 @@
 </div>
 
 <jsp:include page="../common/footer.jsp"/>
+
 
 
 

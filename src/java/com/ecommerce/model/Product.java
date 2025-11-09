@@ -1,5 +1,6 @@
 package com.ecommerce.model;
 
+import com.ecommerce.util.ImagePathUtil;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
@@ -10,6 +11,7 @@ public class Product {
 
     private int productId;
     private String productName;
+    private String slug; // URL-friendly identifier
     private String description;
     private BigDecimal price;
     private BigDecimal discountPrice;
@@ -101,6 +103,19 @@ public class Product {
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
     }
+    
+    /**
+     * Lấy URL ảnh đã được xử lý bởi ImagePathUtil
+     * Sử dụng method này trong JSP thay vì getImageUrl() trực tiếp
+     * 
+     * @return URL ảnh đầy đủ hoặc relative URL
+     */
+    public String getDisplayImageUrl() {
+        if (imageUrl == null || imageUrl.trim().isEmpty()) {
+            return ImagePathUtil.getDefaultImageUrl();
+        }
+        return ImagePathUtil.getImageUrl(imageUrl);
+    }
 
     public boolean isFeatured() {
         return isFeatured;
@@ -126,6 +141,14 @@ public class Product {
         this.category = category;
     }
 
+    public String getSlug() {
+        return slug;
+    }
+
+    public void setSlug(String slug) {
+        this.slug = slug;
+    }
+
     /**
      * price after discount
      *
@@ -136,6 +159,27 @@ public class Product {
             return discountPrice;
         }
         return price;
+    }
+
+    /**
+     * Check if product has discount
+     * @return true if has valid discount
+     */
+    public boolean hasDiscount() {
+        return discountPrice != null 
+                && discountPrice.compareTo(BigDecimal.ZERO) > 0
+                && price != null
+                && price.compareTo(BigDecimal.ZERO) > 0
+                && price.compareTo(discountPrice) > 0;
+    }
+    
+    /**
+     * Getter for JSP EL to access discount status
+     * JSP EL will call this as ${product.discount}
+     * @return true if has valid discount
+     */
+    public boolean isDiscount() {
+        return hasDiscount();
     }
 
     /**
@@ -160,6 +204,18 @@ public class Product {
         } catch (ArithmeticException e) {
             return 0;
         }
+    }
+
+    /**
+     * Get product URL with slug for SEO-friendly URLs
+     * Format: /product/{id}-{slug} hoặc /product/{id} nếu chưa có slug
+     * @return Product URL path
+     */
+    public String getProductUrl() {
+        if (slug != null && !slug.trim().isEmpty()) {
+            return productId + "-" + slug;
+        }
+        return String.valueOf(productId);
     }
 
 }

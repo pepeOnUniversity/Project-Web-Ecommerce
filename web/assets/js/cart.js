@@ -5,16 +5,31 @@ const contextPath = window.APP_CONTEXT || '';
 
 // Add to cart function
 function addToCart(productId, quantity = 1) {
-    const formData = new FormData();
-    formData.append('action', 'add');
-    formData.append('productId', productId);
-    formData.append('quantity', quantity);
+    const params = new URLSearchParams();
+    params.append('action', 'add');
+    params.append('productId', productId);
+    params.append('quantity', quantity);
     
     fetch(contextPath + '/cart', {
         method: 'POST',
-        body: formData
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: params
     })
-    .then(response => response.json())
+    .then(response => {
+        // Kiểm tra content type
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            // Nếu không phải JSON, đọc text để debug
+            return response.text().then(text => {
+                console.error('Expected JSON but got:', contentType);
+                console.error('Response text:', text.substring(0, 500));
+                throw new Error('Server returned non-JSON response');
+            });
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             showToast('success', data.message);
@@ -31,13 +46,16 @@ function addToCart(productId, quantity = 1) {
 
 // Update cart item quantity
 function updateCartItem(cartItemId, quantity) {
-    const formData = new FormData();
-    formData.append('cartItemId', cartItemId);
-    formData.append('quantity', quantity);
+    const params = new URLSearchParams();
+    params.append('cartItemId', cartItemId);
+    params.append('quantity', quantity);
     
     fetch(contextPath + '/cart', {
         method: 'PUT',
-        body: formData
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: params
     })
     .then(response => response.json())
     .then(data => {
@@ -60,12 +78,15 @@ function removeCartItem(cartItemId) {
         return;
     }
     
-    const formData = new FormData();
-    formData.append('cartItemId', cartItemId);
+    const params = new URLSearchParams();
+    params.append('cartItemId', cartItemId);
     
     fetch(contextPath + '/cart', {
         method: 'DELETE',
-        body: formData
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: params
     })
     .then(response => response.json())
     .then(data => {

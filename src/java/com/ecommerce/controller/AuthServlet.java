@@ -2,7 +2,9 @@ package com.ecommerce.controller;
 
 import com.ecommerce.dao.UserDAO;
 import com.ecommerce.model.User;
+import com.ecommerce.util.EmailService;
 import com.ecommerce.util.PasswordUtil;
+import com.ecommerce.util.TokenUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.Cookie;
@@ -159,15 +161,47 @@ public class AuthServlet extends HttpServlet {
         if (error == null) {
             // Tạo user mới
             String passwordHash = PasswordUtil.hashPassword(password);
+            String verificationToken = TokenUtil.generateVerificationToken();
+            
             User newUser = new User(username, email, passwordHash, fullName, phone, address);
+            newUser.setVerificationToken(verificationToken);
+            newUser.setEmailVerified(false);
             
             if (userDAO.addUser(newUser)) {
-                // Đăng ký thành công, tự động đăng nhập
+                // Lấy user vừa tạo để lấy user_id
                 User savedUser = userDAO.getUserByUsername(username);
-                HttpSession session = request.getSession();
-                session.setAttribute("user", savedUser);
-                response.sendRedirect(request.getContextPath() + "/home");
-                return;
+                
+                // Gửi email xác minh
+                String baseUrl = request.getScheme() + "://" + request.getServerName() + 
+                                (request.getServerPort() != 80 && request.getServerPort() != 443 ? 
+                                 ":" + request.getServerPort() : "") + 
+                                request.getContextPath();
+                
+                boolean emailSent = EmailService.sendVerificationEmail(
+                    email, 
+                    username, 
+                    verificationToken, 
+                    baseUrl
+                );
+                
+                if (emailSent) {
+                    // Email đã được gửi, chuyển đến trang thông báo
+                    request.setAttribute("message", 
+                        "Đăng ký thành công! Vui lòng kiểm tra email để xác minh tài khoản.");
+                    request.setAttribute("messageType", "success");
+                    request.setAttribute("email", email);
+                    request.getRequestDispatcher("/views/auth/verify-email.jsp").forward(request, response);
+                    return;
+                } else {
+                    // Email không gửi được, nhưng vẫn cho phép đăng nhập (có thể resend sau)
+                    request.setAttribute("message", 
+                        "Đăng ký thành công! Tuy nhiên, email xác minh chưa được gửi. " +
+                        "Vui lòng liên hệ hỗ trợ hoặc thử lại sau.");
+                    request.setAttribute("messageType", "warning");
+                    request.setAttribute("email", email);
+                    request.getRequestDispatcher("/views/auth/verify-email.jsp").forward(request, response);
+                    return;
+                }
             } else {
                 error = "Có lỗi xảy ra khi đăng ký. Vui lòng thử lại.";
             }

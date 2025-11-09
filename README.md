@@ -105,7 +105,7 @@ private static final String DB_PASSWORD = "your_password"; // Thay đổi theo c
 1. Mở project trong NetBeans
 2. Clean and Build project (Shift+F11)
 3. Deploy project lên Tomcat
-4. Truy cập: `http://localhost:8080/WebEcommerce`
+4. Truy cập: `http://localhost:9999/WebEcommerce`
 
 ## 🔐 Tài khoản mặc định
 
@@ -181,6 +181,11 @@ Dự án này được tạo cho mục đích học tập và nghiên cứu.
 ## 👨‍💻 Tác giả
 
 Created for FPT University Final Project - Semester 4
+
+
+
+
+
 
 
 
