@@ -4,6 +4,7 @@ import com.ecommerce.dao.CategoryDAO;
 import com.ecommerce.dao.ProductDAO;
 import com.ecommerce.model.Category;
 import com.ecommerce.model.Product;
+import com.ecommerce.util.ImagePathUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;

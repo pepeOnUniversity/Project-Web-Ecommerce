@@ -15,7 +15,8 @@
     <c:if test="${product != null}">
         <div class="row">
             <div class="col-md-6">
-                <img src="${product.imageUrl}" class="img-fluid rounded shadow" alt="${product.productName}">
+                <img src="${product.displayImageUrl}" class="img-fluid rounded shadow" alt="${product.productName}" 
+                     onerror="if(this.src.indexOf('data:image') === -1) this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'400\'%3E%3Crect fill=\'%23ddd\' width=\'400\' height=\'400\'/%3E%3Ctext fill=\'%23999\' font-family=\'sans-serif\' font-size=\'18\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\'%3ENo Image%3C/text%3E%3C/svg%3E'">
             </div>
             <div class="col-md-6">
                 <h2>${product.productName}</h2>
@@ -70,8 +71,9 @@
                     <div class="col-md-3">
                         <div class="card product-card h-100 shadow-sm">
                             <a href="${pageContext.request.contextPath}/product/${related.productId}">
-                                <img src="${related.imageUrl}" class="card-img-top" alt="${related.productName}" 
-                                     style="height: 200px; object-fit: cover;">
+                                <img src="${related.displayImageUrl}" class="card-img-top" alt="${related.productName}" 
+                                     style="height: 200px; object-fit: cover;" 
+                                     onerror="if(this.src.indexOf('data:image') === -1) this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\'%3E%3Crect fill=\'%23ddd\' width=\'200\' height=\'200\'/%3E%3Ctext fill=\'%23999\' font-family=\'sans-serif\' font-size=\'14\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\'%3ENo Image%3C/text%3E%3C/svg%3E'">
                             </a>
                             <div class="card-body">
                                 <h6 class="card-title">

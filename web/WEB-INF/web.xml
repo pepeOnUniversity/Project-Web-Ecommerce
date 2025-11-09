@@ -33,6 +33,8 @@
     </filter-mapping>
     
     <!-- Error Pages -->
+    <!-- Note: Static resources (JS, CSS, images) should be handled by default servlet -->
+    <!-- Only show error page for actual page requests, not static resources -->
     <error-page>
         <error-code>404</error-code>
         <location>/views/error.jsp</location>
@@ -42,10 +44,39 @@
         <location>/views/error.jsp</location>
     </error-page>
     
+    <!-- Default Servlet Configuration -->
+    <!-- Ensure static resources are served correctly -->
+    <servlet-mapping>
+        <servlet-name>default</servlet-name>
+        <url-pattern>/assets/*</url-pattern>
+    </servlet-mapping>
+    
     <!-- Session Configuration -->
     <session-config>
         <session-timeout>30</session-timeout>
     </session-config>
+    
+    <!-- Image Servlet Configuration -->
+    <!-- 
+    Uncomment và cấu hình đường dẫn thư mục ảnh khi deploy production
+    Thay đổi param-value thành đường dẫn thực tế trên server
+    Ví dụ Linux: /var/www/ecommerce/images
+    Ví dụ Windows: C:\ecommerce\images
+    -->
+    <!--
+    <servlet>
+        <servlet-name>ImageServlet</servlet-name>
+        <servlet-class>com.ecommerce.controller.ImageServlet</servlet-class>
+        <init-param>
+            <param-name>imageBasePath</param-name>
+            <param-value>/var/www/ecommerce/images</param-value>
+        </init-param>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ImageServlet</servlet-name>
+        <url-pattern>/images/*</url-pattern>
+    </servlet-mapping>
+    -->
     
 </web-app>
 

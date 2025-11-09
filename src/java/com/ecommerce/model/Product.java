@@ -1,5 +1,6 @@
 package com.ecommerce.model;
 
+import com.ecommerce.util.ImagePathUtil;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
@@ -101,6 +102,19 @@ public class Product {
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
     }
+    
+    /**
+     * Lấy URL ảnh đã được xử lý bởi ImagePathUtil
+     * Sử dụng method này trong JSP thay vì getImageUrl() trực tiếp
+     * 
+     * @return URL ảnh đầy đủ hoặc relative URL
+     */
+    public String getDisplayImageUrl() {
+        if (imageUrl == null || imageUrl.trim().isEmpty()) {
+            return ImagePathUtil.getDefaultImageUrl();
+        }
+        return ImagePathUtil.getImageUrl(imageUrl);
+    }
 
     public boolean isFeatured() {
         return isFeatured;
@@ -136,6 +150,27 @@ public class Product {
             return discountPrice;
         }
         return price;
+    }
+
+    /**
+     * Check if product has discount
+     * @return true if has valid discount
+     */
+    public boolean hasDiscount() {
+        return discountPrice != null 
+                && discountPrice.compareTo(BigDecimal.ZERO) > 0
+                && price != null
+                && price.compareTo(BigDecimal.ZERO) > 0
+                && price.compareTo(discountPrice) > 0;
+    }
+    
+    /**
+     * Getter for JSP EL to access discount status
+     * JSP EL will call this as ${product.discount}
+     * @return true if has valid discount
+     */
+    public boolean isDiscount() {
+        return hasDiscount();
     }
 
     /**

@@ -32,6 +32,45 @@ public class ProductDAO {
         List<Product> products = new ArrayList<>();
         String sql = "SELECT * FROM products WHERE is_active = 1 ORDER BY product_id DESC";
         
+        LOGGER.info("Getting all active products");
+        
+        try (Connection conn = dbConnection.getConnection()) {
+            if (conn == null) {
+                LOGGER.severe("Database connection is NULL!");
+                return products;
+            }
+            
+            try (PreparedStatement ps = conn.prepareStatement(sql);
+                 ResultSet rs = ps.executeQuery()) {
+                
+                while (rs.next()) {
+                    try {
+                        products.add(mapResultSetToProduct(rs));
+                    } catch (SQLException e) {
+                        LOGGER.log(Level.SEVERE, "Error mapping product from ResultSet", e);
+                    }
+                }
+                LOGGER.info("Total active products found: " + products.size());
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error getting all products", e);
+            e.printStackTrace();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Unexpected error getting all products", e);
+            e.printStackTrace();
+        }
+        
+        return products;
+    }
+    
+    /**
+     * Lấy tất cả products (kể cả inactive) - dùng cho admin
+     * @return 
+     */
+    public List<Product> getAllProductsForAdmin() {
+        List<Product> products = new ArrayList<>();
+        String sql = "SELECT * FROM products ORDER BY product_id DESC";
+        
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -40,14 +79,14 @@ public class ProductDAO {
                 products.add(mapResultSetToProduct(rs));
             }
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error getting all products", e);
+            LOGGER.log(Level.SEVERE, "Error getting all products for admin", e);
         }
         
         return products;
     }
     
     /**
-     * Lấy product theo ID
+     * Lấy product theo ID (chỉ lấy active)
      */
     public Product getProductById(int productId) {
         String sql = "SELECT * FROM products WHERE product_id = ? AND is_active = 1";
@@ -70,24 +109,70 @@ public class ProductDAO {
     }
     
     /**
-     * Lấy featured products
+     * Lấy product theo ID (bất kể trạng thái) - dùng cho admin
      */
-    public List<Product> getFeaturedProducts(int limit) {
-        List<Product> products = new ArrayList<>();
-        String sql = "SELECT TOP (?) * FROM products WHERE is_featured = 1 AND is_active = 1 ORDER BY product_id DESC";
+    public Product getProductByIdForAdmin(int productId) {
+        String sql = "SELECT * FROM products WHERE product_id = ?";
         
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             
-            ps.setInt(1, limit);
+            ps.setInt(1, productId);
             
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    products.add(mapResultSetToProduct(rs));
+                if (rs.next()) {
+                    return mapResultSetToProduct(rs);
                 }
             }
         } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error getting product by ID for admin: " + productId, e);
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Lấy featured products
+     */
+    public List<Product> getFeaturedProducts(int limit) {
+        List<Product> products = new ArrayList<>();
+        // SQL Server không hỗ trợ TOP với parameter, phải dùng string concatenation hoặc cách khác
+        // Sử dụng cách an toàn hơn: lấy tất cả rồi limit trong code, hoặc dùng OFFSET/FETCH
+        String sql = "SELECT * FROM products WHERE is_featured = 1 AND is_active = 1 ORDER BY product_id DESC";
+        
+        LOGGER.info("Getting featured products with limit: " + limit);
+        LOGGER.info("SQL: " + sql);
+        
+        try (Connection conn = dbConnection.getConnection()) {
+            if (conn == null) {
+                LOGGER.severe("Database connection is NULL!");
+                return products;
+            }
+            LOGGER.info("Database connection successful");
+            
+            try (PreparedStatement ps = conn.prepareStatement(sql);
+                 ResultSet rs = ps.executeQuery()) {
+                
+                LOGGER.info("Executing query...");
+                int count = 0;
+                while (rs.next() && count < limit) {
+                    try {
+                        Product product = mapResultSetToProduct(rs);
+                        products.add(product);
+                        count++;
+                        LOGGER.info("Added product: " + product.getProductId() + " - " + product.getProductName());
+                    } catch (SQLException e) {
+                        LOGGER.log(Level.SEVERE, "Error mapping product from ResultSet", e);
+                    }
+                }
+                LOGGER.info("Total featured products found: " + products.size());
+            }
+        } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error getting featured products", e);
+            e.printStackTrace();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Unexpected error getting featured products", e);
+            e.printStackTrace();
         }
         
         return products;

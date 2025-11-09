@@ -19,7 +19,7 @@ import java.util.List;
  * Admin Servlet
  * Xử lý admin dashboard và quản lý
  */
-@WebServlet(name = "AdminServlet", urlPatterns = {"/admin", "/admin/dashboard", "/admin/products", "/admin/orders"})
+@WebServlet(name = "AdminServlet", urlPatterns = {"/admin", "/admin/dashboard", "/admin/orders"})
 public class AdminServlet extends HttpServlet {
     
     private ProductDAO productDAO;
@@ -43,8 +43,6 @@ public class AdminServlet extends HttpServlet {
         
         if ("/admin".equals(path) || "/admin/dashboard".equals(path)) {
             showDashboard(request, response);
-        } else if ("/admin/products".equals(path)) {
-            showManageProducts(request, response);
         } else if ("/admin/orders".equals(path)) {
             showManageOrders(request, response);
         }
@@ -99,26 +97,6 @@ public class AdminServlet extends HttpServlet {
         } catch (Exception e) {
             e.printStackTrace();
             request.setAttribute("error", "Có lỗi xảy ra khi tải dashboard");
-            request.getRequestDispatcher("/views/error.jsp").forward(request, response);
-        }
-    }
-    
-    /**
-     * Hiển thị quản lý sản phẩm
-     */
-    private void showManageProducts(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        
-        try {
-            List<Product> products = productDAO.getAllProducts();
-            request.setAttribute("products", products);
-            request.setAttribute("categories", categoryDAO.getAllCategories());
-            
-            request.getRequestDispatcher("/views/admin/manage-products.jsp").forward(request, response);
-            
-        } catch (Exception e) {
-            e.printStackTrace();
-            request.setAttribute("error", "Có lỗi xảy ra");
             request.getRequestDispatcher("/views/error.jsp").forward(request, response);
         }
     }
