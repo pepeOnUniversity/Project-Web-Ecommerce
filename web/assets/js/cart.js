@@ -95,6 +95,10 @@ function removeCartItem(cartItemId) {
             updateCartBadge(data.cartCount || 0);
             // Remove row from table
             document.querySelector(`tr[data-cart-item-id="${cartItemId}"]`)?.remove();
+            // Update cart total after removing item
+            if (typeof updateCartTotal === 'function') {
+                updateCartTotal();
+            }
             if (document.querySelectorAll('tbody tr').length === 0) {
                 location.reload();
             }
