@@ -66,21 +66,62 @@ public class FileUploadUtil {
             
             // Tạo đường dẫn đầy đủ
             String imagePath = "/images/products/" + uniqueFileName;
-            String fullPath = webappPath + imagePath;
+            
+            // Đảm bảo webappPath không null
+            if (webappPath == null || webappPath.trim().isEmpty()) {
+                LOGGER.log(Level.SEVERE, "webappPath is null or empty");
+                return null;
+            }
+            
+            // Loại bỏ trailing slash nếu có
+            String cleanWebappPath = webappPath.endsWith("/") || webappPath.endsWith("\\") 
+                    ? webappPath.substring(0, webappPath.length() - 1) 
+                    : webappPath;
+            
+            // Tạo đường dẫn file đầy đủ (thay thế / bằng \ trên Windows nếu cần)
+            String fullPath = cleanWebappPath + imagePath.replace("/", File.separator);
             
             // Tạo thư mục nếu chưa tồn tại
-            File uploadDir = new File(webappPath + "/images/products");
+            File uploadDir = new File(cleanWebappPath + File.separator + "images" + File.separator + "products");
             if (!uploadDir.exists()) {
-                uploadDir.mkdirs();
+                boolean created = uploadDir.mkdirs();
+                if (!created) {
+                    LOGGER.log(Level.WARNING, "Failed to create upload directory: " + uploadDir.getAbsolutePath());
+                } else {
+                    LOGGER.log(Level.INFO, "Created upload directory: " + uploadDir.getAbsolutePath());
+                }
             }
             
-            // Lưu file
+            // Lưu file vào thư mục deploy (nơi server serve files)
             Path targetPath = Paths.get(fullPath);
+            byte[] fileContent;
             try (InputStream inputStream = part.getInputStream()) {
-                Files.copy(inputStream, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                // Đọc toàn bộ file vào memory để có thể lưu vào nhiều nơi
+                fileContent = inputStream.readAllBytes();
+                Files.write(targetPath, fileContent);
             }
             
-            LOGGER.log(Level.INFO, "File uploaded successfully: " + imagePath);
+            // Verify file was saved
+            File savedFile = new File(fullPath);
+            if (!savedFile.exists() || !savedFile.isFile()) {
+                LOGGER.log(Level.SEVERE, "File was not saved correctly: " + fullPath);
+                return null;
+            }
+            
+            LOGGER.log(Level.INFO, "File uploaded successfully: " + imagePath + " (saved to: " + fullPath + ", size: " + savedFile.length() + " bytes)");
+            
+            // Trong development, cũng lưu file vào thư mục source nếu có thể
+            // Điều này giúp file không bị mất khi restart server
+            try {
+                File sourceFile = saveToSourceDirectoryIfPossible(cleanWebappPath, uniqueFileName, fileContent);
+                if (sourceFile != null) {
+                    LOGGER.log(Level.INFO, "Also saved to source directory: " + sourceFile.getAbsolutePath());
+                }
+            } catch (Exception e) {
+                // Không critical, chỉ log warning
+                LOGGER.log(Level.WARNING, "Could not save file to source directory (this is OK in production)", e);
+            }
+            
             return imagePath;
             
         } catch (IOException e) {
@@ -183,6 +224,81 @@ public class FileUploadUtil {
             return name + "-" + uniqueId + extension;
         }
         return fileName + "-" + UUID.randomUUID().toString().substring(0, 8);
+    }
+    
+    /**
+     * Lưu file vào thư mục source trong development (nếu có thể)
+     * Điều này giúp file không bị mất khi restart server
+     * 
+     * @param deployedWebappPath Đường dẫn thư mục deploy (getRealPath("/"))
+     * @param fileName Tên file cần lưu
+     * @param fileContent Nội dung file (bytes)
+     * @return File đã lưu hoặc null nếu không thể lưu
+     */
+    private static File saveToSourceDirectoryIfPossible(String deployedWebappPath, String fileName, byte[] fileContent) throws IOException {
+        if (fileContent == null || fileContent.length == 0) {
+            return null;
+        }
+        
+        // Thử tìm thư mục source bằng cách đi ngược từ thư mục deploy
+        File deployedDir = new File(deployedWebappPath);
+        
+        if (!deployedDir.exists()) {
+            return null;
+        }
+        
+        // Tìm thư mục source bằng cách tìm thư mục có chứa "web" và "WEB-INF"
+        // Thường thì thư mục deploy sẽ là: .../build/web hoặc .../target/web hoặc .../work/.../web
+        // Thư mục source sẽ là: .../web
+        File currentDir = deployedDir;
+        int maxDepth = 15; // Giới hạn độ sâu tìm kiếm
+        int depth = 0;
+        
+        while (currentDir != null && depth < maxDepth) {
+            // Kiểm tra xem có phải là thư mục webapp source không
+            // (có WEB-INF và không nằm trong build/target/work)
+            File webInfDir = new File(currentDir, "WEB-INF");
+            String dirName = currentDir.getName().toLowerCase();
+            
+            if (webInfDir.exists() && webInfDir.isDirectory()) {
+                // Kiểm tra xem có phải là thư mục source (không phải build/target/work)
+                if (!dirName.equals("build") && !dirName.equals("target") && 
+                    !dirName.equals("work") && !currentDir.getPath().contains("work")) {
+                    // Tìm thấy thư mục webapp source
+                    File sourceImagesDir = new File(currentDir, "images" + File.separator + "products");
+                    if (sourceImagesDir.exists() || sourceImagesDir.mkdirs()) {
+                        // Lưu file vào thư mục source
+                        File sourceFile = new File(sourceImagesDir, fileName);
+                        Files.write(sourceFile.toPath(), fileContent);
+                        return sourceFile;
+                    }
+                }
+            }
+            
+            // Đi lên thư mục cha
+            currentDir = currentDir.getParentFile();
+            depth++;
+        }
+        
+        // Nếu không tìm thấy bằng cách trên, thử tìm từ workspace root
+        // (thường là thư mục có chứa file build.xml hoặc pom.xml)
+        String userDir = System.getProperty("user.dir");
+        if (userDir != null) {
+            File workspaceRoot = new File(userDir);
+            File webDir = new File(workspaceRoot, "web");
+            File webInfDir = new File(webDir, "WEB-INF");
+            
+            if (webInfDir.exists() && webInfDir.isDirectory()) {
+                File sourceImagesDir = new File(webDir, "images" + File.separator + "products");
+                if (sourceImagesDir.exists() || sourceImagesDir.mkdirs()) {
+                    File sourceFile = new File(sourceImagesDir, fileName);
+                    Files.write(sourceFile.toPath(), fileContent);
+                    return sourceFile;
+                }
+            }
+        }
+        
+        return null;
     }
 }
 

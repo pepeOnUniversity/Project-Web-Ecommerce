@@ -8,6 +8,13 @@
 <jsp:include page="../common/navbar.jsp"/>
 
 <div class="container-fluid my-4">
+    <div class="row">
+        <jsp:include page="admin-sidebar.jsp">
+            <jsp:param name="currentPage" value="products"/>
+        </jsp:include>
+        
+        <!-- Main Content -->
+        <div class="col-md-9">
     <!-- Success/Error Messages -->
     <c:if test="${param.success != null}">
         <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -20,6 +27,9 @@
                 </c:when>
                 <c:when test="${param.success == 'deleted'}">
                     <i class="fas fa-check-circle me-2"></i>Xóa sản phẩm thành công!
+                </c:when>
+                <c:when test="${param.success == 'image_updated'}">
+                    <i class="fas fa-check-circle me-2"></i>Cập nhật ảnh sản phẩm thành công!
                 </c:when>
             </c:choose>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -37,6 +47,15 @@
                 </c:when>
                 <c:when test="${param.error == 'delete_failed'}">
                     <i class="fas fa-exclamation-circle me-2"></i>Xóa sản phẩm thất bại!
+                </c:when>
+                <c:when test="${param.error == 'no_image'}">
+                    <i class="fas fa-exclamation-circle me-2"></i>Vui lòng chọn ảnh để cập nhật!
+                </c:when>
+                <c:when test="${param.error == 'upload_failed'}">
+                    <i class="fas fa-exclamation-circle me-2"></i>Upload ảnh thất bại! Vui lòng kiểm tra định dạng và kích thước file.
+                </c:when>
+                <c:when test="${param.error == 'file_too_large'}">
+                    <i class="fas fa-exclamation-circle me-2"></i>File ảnh quá lớn! Kích thước tối đa là 10MB.
                 </c:when>
                 <c:otherwise>
                     <i class="fas fa-exclamation-circle me-2"></i>Có lỗi xảy ra: ${param.error}
@@ -72,9 +91,15 @@
                         <c:forEach var="product" items="${products}">
                             <tr>
                                 <td>
-                                    <img src="${product.displayImageUrl}" alt="${product.productName}" 
-                                         class="img-thumbnail" style="width: 60px; height: 60px; object-fit: cover;"
-                                         onerror="if(this.src.indexOf('data:image') === -1) this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'60\' height=\'60\'%3E%3Crect fill=\'%23ddd\' width=\'60\' height=\'60\'/%3E%3Ctext fill=\'%23999\' font-family=\'sans-serif\' font-size=\'10\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\'%3ENo Image%3C/text%3E%3C/svg%3E'">
+                                    <c:set var="imageUrl" value="${product.displayImageUrl}"/>
+                                    <c:if test="${not empty product.imageUrl && !product.imageUrl.contains('placeholder')}">
+                                        <c:set var="imageUrl" value="${product.displayImageUrl}?v=${product.productId}&t=${param.t != null ? param.t : ''}"/>
+                                    </c:if>
+                                    <img src="${imageUrl}" alt="${product.productName}" 
+                                         class="img-thumbnail product-image" 
+                                         data-product-id="${product.productId}"
+                                         style="width: 60px; height: 60px; object-fit: cover;"
+                                         onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'60\' height=\'60\'%3E%3Crect fill=\'%23ddd\' width=\'60\' height=\'60\'/%3E%3Ctext fill=\'%23999\' font-family=\'sans-serif\' font-size=\'10\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\'%3ENo Image%3C/text%3E%3C/svg%3E'">
                                 </td>
                                 <td>${product.productName}</td>
                                 <td><fmt:formatNumber value="${product.price}" type="currency" currencySymbol="₫" maxFractionDigits="0"/></td>
@@ -97,12 +122,19 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <button class="btn btn-sm btn-warning" onclick="editProduct(${product.productId})">
+                                    <div class="btn-group" role="group">
+                                        <button class="btn btn-sm btn-warning" onclick="editProduct(${product.productId})" title="Sửa thông tin sản phẩm">
                                         <i class="fas fa-edit"></i> Sửa
                                     </button>
-                                    <button class="btn btn-sm btn-danger" onclick="deleteProduct(${product.productId})">
+                                        <button class="btn btn-sm btn-info" 
+                                                onclick="updateImageProduct(${product.productId}, '${product.displayImageUrl}')" 
+                                                title="Chỉ cập nhật ảnh">
+                                            <i class="fas fa-image"></i> Đổi ảnh
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" onclick="deleteProduct(${product.productId})" title="Xóa sản phẩm">
                                         <i class="fas fa-trash"></i> Xóa
                                     </button>
+                                    </div>
                                 </td>
                             </tr>
                         </c:forEach>
@@ -119,11 +151,11 @@
         <div class="modal-content">
             <form id="addProductForm" action="${pageContext.request.contextPath}/admin/products" method="POST" enctype="multipart/form-data">
                 <input type="hidden" name="action" value="add">
-                <div class="modal-header">
-                    <h5 class="modal-title">Thêm sản phẩm mới</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
+            <div class="modal-header">
+                <h5 class="modal-title">Thêm sản phẩm mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="productName" class="form-label">Tên sản phẩm <span class="text-danger">*</span></label>
@@ -243,7 +275,13 @@
                         <input type="file" class="form-control" id="editProductImage" name="productImage" accept="image/*">
                         <small class="form-text text-muted">Chấp nhận: JPG, PNG, GIF, WEBP (tối đa 10MB). Để trống nếu không muốn thay đổi.</small>
                         <div id="editImagePreview" class="mt-2">
-                            <img id="editPreviewImg" src="" alt="Current image" style="max-width: 200px; max-height: 200px; object-fit: cover;">
+                            <div class="mb-2">
+                                <strong>Ảnh hiện tại:</strong>
+                            </div>
+                            <img id="editPreviewImg" src="" alt="Current image" 
+                                 style="max-width: 200px; max-height: 200px; object-fit: cover; border: 2px solid #dee2e6; border-radius: 4px;"
+                                 onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\'%3E%3Crect fill=\'%23ddd\' width=\'200\' height=\'200\'/%3E%3Ctext fill=\'%23999\' font-family=\'sans-serif\' font-size=\'14\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\'%3ENo Image%3C/text%3E%3C/svg%3E'">
+                            <div class="mt-2 text-muted small" id="editCurrentImageInfo"></div>
                         </div>
                     </div>
                     <div class="row">
@@ -261,7 +299,7 @@
                                 <label class="form-check-label" for="editIsActive">
                                     Đang bán
                                 </label>
-                            </div>
+            </div>
                         </div>
                     </div>
                 </div>
@@ -270,6 +308,52 @@
                     <button type="submit" class="btn btn-warning">Cập nhật</button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- Update Image Only Modal -->
+<div class="modal fade" id="updateImageModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="updateImageForm" action="${pageContext.request.contextPath}/admin/products" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="action" value="updateImage">
+                <input type="hidden" id="updateImageProductId" name="productId">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-image me-2"></i>Cập nhật ảnh sản phẩm</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="updateImageFile" class="form-label">Chọn ảnh mới <span class="text-danger">*</span></label>
+                        <input type="file" class="form-control" id="updateImageFile" name="productImage" accept="image/*" required>
+                        <small class="form-text text-muted">Chấp nhận: JPG, PNG, GIF, WEBP (tối đa 10MB)</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Ảnh hiện tại:</label>
+                        <div id="currentImageContainer" class="text-center">
+                            <img id="currentProductImage" src="" alt="Current image" 
+                                 style="max-width: 300px; max-height: 300px; object-fit: cover; border: 2px solid #dee2e6; border-radius: 4px;"
+                                 onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'300\' height=\'300\'%3E%3Crect fill=\'%23ddd\' width=\'300\' height=\'300\'/%3E%3Ctext fill=\'%23999\' font-family=\'sans-serif\' font-size=\'16\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\'%3ENo Image%3C/text%3E%3C/svg%3E'">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Preview ảnh mới:</label>
+                        <div id="newImagePreview" class="text-center" style="display: none;">
+                            <img id="newImagePreviewImg" src="" alt="Preview" 
+                                 style="max-width: 300px; max-height: 300px; object-fit: cover; border: 2px solid #0d6efd; border-radius: 4px;">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-upload me-2"></i>Cập nhật ảnh
+                    </button>
+                </div>
+            </form>
+        </div>
+            </div>
         </div>
     </div>
 </div>
@@ -348,7 +432,17 @@ function editProduct(productId) {
         document.getElementById('editCategoryId').value = ${product.categoryId};
         document.getElementById('editIsFeatured').checked = ${product.featured};
         document.getElementById('editIsActive').checked = ${product.active};
-        document.getElementById('editPreviewImg').src = '<c:out value="${product.displayImageUrl}" escapeXml="true"/>';
+        const currentImageUrl = '<c:out value="${product.displayImageUrl}" escapeXml="true"/>';
+        document.getElementById('editPreviewImg').src = currentImageUrl;
+        
+        // Hiển thị thông tin ảnh hiện tại
+        const imageInfo = document.getElementById('editCurrentImageInfo');
+        if (currentImageUrl && !currentImageUrl.includes('placeholder') && !currentImageUrl.includes('No Image')) {
+            imageInfo.textContent = 'Ảnh hiện tại: ' + currentImageUrl;
+        } else {
+            imageInfo.textContent = 'Sản phẩm chưa có ảnh';
+            imageInfo.className = 'mt-2 text-warning small';
+        }
         
         // Show modal
         const editModal = new bootstrap.Modal(document.getElementById('editProductModal'));
@@ -362,6 +456,90 @@ function deleteProduct(productId) {
         window.location.href = '${pageContext.request.contextPath}/admin/products?action=delete&id=' + productId;
     }
 }
+
+// Update image only
+function updateImageProduct(productId, currentImageUrl) {
+    // Set product ID vào form
+    document.getElementById('updateImageProductId').value = productId;
+    
+    // Hiển thị ảnh hiện tại
+    const currentImage = document.getElementById('currentProductImage');
+    if (currentImageUrl && currentImageUrl.trim() !== '') {
+        currentImage.src = currentImageUrl;
+    } else {
+        currentImage.src = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'300\' height=\'300\'%3E%3Crect fill=\'%23ddd\' width=\'300\' height=\'300\'/%3E%3Ctext fill=\'%23999\' font-family=\'sans-serif\' font-size=\'16\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\'%3ENo Image%3C/text%3E%3C/svg%3E';
+    }
+    
+    // Reset form
+    document.getElementById('updateImageForm').reset();
+    document.getElementById('updateImageProductId').value = productId; // Set lại sau khi reset
+    document.getElementById('newImagePreview').style.display = 'none';
+    
+    // Mở modal
+    const updateImageModal = new bootstrap.Modal(document.getElementById('updateImageModal'));
+    updateImageModal.show();
+}
+
+// Preview ảnh mới khi chọn file (Update Image Modal)
+document.addEventListener('DOMContentLoaded', function() {
+    const updateImageFileInput = document.getElementById('updateImageFile');
+    if (updateImageFileInput) {
+        updateImageFileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // Validate file size (10MB)
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('File ảnh quá lớn! Kích thước tối đa là 10MB.');
+                    this.value = '';
+                    document.getElementById('newImagePreview').style.display = 'none';
+                    return;
+                }
+                
+                // Validate file type
+                const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+                if (!validTypes.includes(file.type)) {
+                    alert('Định dạng file không hợp lệ! Chỉ chấp nhận: JPG, PNG, GIF, WEBP.');
+                    this.value = '';
+                    document.getElementById('newImagePreview').style.display = 'none';
+                    return;
+                }
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('newImagePreviewImg').src = e.target.result;
+                    document.getElementById('newImagePreview').style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                document.getElementById('newImagePreview').style.display = 'none';
+            }
+        });
+    }
+});
+
+// Force reload images after successful image update
+<c:if test="${param.success == 'image_updated'}">
+    document.addEventListener('DOMContentLoaded', function() {
+        // Reload all product images to show updated images
+        const productImages = document.querySelectorAll('.product-image');
+        productImages.forEach(function(img) {
+            const currentSrc = img.src;
+            // Remove existing cache-busting parameters and add new timestamp
+            const baseUrl = currentSrc.split('?')[0];
+            const newSrc = baseUrl + '?v=' + img.dataset.productId + '&t=' + Date.now();
+            img.src = newSrc;
+        });
+        
+        // Also reload the page after a short delay to ensure fresh data
+        setTimeout(function() {
+            // Remove the success parameter to avoid infinite reload
+            const url = new URL(window.location.href);
+            url.searchParams.delete('success');
+            url.searchParams.delete('t');
+            window.history.replaceState({}, '', url);
+        }, 100);
+    });
+</c:if>
 </script>
 
 

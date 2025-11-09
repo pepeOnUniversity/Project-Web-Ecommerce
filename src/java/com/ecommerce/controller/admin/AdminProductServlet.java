@@ -86,6 +86,8 @@ public class AdminProductServlet extends HttpServlet {
             addProduct(request, response);
         } else if ("update".equals(action)) {
             updateProduct(request, response);
+        } else if ("updateImage".equals(action)) {
+            updateProductImage(request, response);
         } else {
             response.sendRedirect(request.getContextPath() + "/admin/products?error=invalid_action");
         }
@@ -163,6 +165,9 @@ public class AdminProductServlet extends HttpServlet {
                 
                 if (imagePath != null) {
                     product.setImageUrl(imagePath);
+                } else {
+                    // Nếu upload thất bại, vẫn cho phép tạo sản phẩm nhưng không có ảnh
+                    LOGGER.log(Level.WARNING, "Failed to upload image for new product: " + productName);
                 }
             }
             
@@ -231,6 +236,9 @@ public class AdminProductServlet extends HttpServlet {
                 if (imagePath != null) {
                     existingProduct.setImageUrl(imagePath);
                 }
+            } else {
+                // Nếu không upload ảnh mới, giữ nguyên ảnh cũ
+                // Không cần làm gì, existingProduct đã có imageUrl từ database
             }
             
             // Cập nhật database
@@ -242,6 +250,67 @@ public class AdminProductServlet extends HttpServlet {
             
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error updating product", e);
+            response.sendRedirect(request.getContextPath() + "/admin/products?error=server_error");
+        }
+    }
+    
+    /**
+     * Chỉ cập nhật ảnh sản phẩm (không cần sửa thông tin khác)
+     */
+    private void updateProductImage(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        
+        try {
+            int productId = Integer.parseInt(request.getParameter("productId"));
+            
+            // Lấy sản phẩm hiện tại
+            Product existingProduct = productDAO.getProductByIdForAdmin(productId);
+            if (existingProduct == null) {
+                response.sendRedirect(request.getContextPath() + "/admin/products?error=product_not_found");
+                return;
+            }
+            
+            // Kiểm tra có file upload không
+            Part imagePart = request.getPart("productImage");
+            if (imagePart == null || imagePart.getSize() == 0) {
+                response.sendRedirect(request.getContextPath() + "/admin/products?error=no_image");
+                return;
+            }
+            
+            String webappPath = getServletContext().getRealPath("/");
+            
+            // Xóa ảnh cũ
+            FileUploadUtil.deleteOldImage(existingProduct.getImageUrl(), webappPath);
+            
+            // Upload ảnh mới
+            String imagePath = FileUploadUtil.uploadProductImage(imagePart, existingProduct.getProductName(), webappPath);
+            
+            if (imagePath == null) {
+                // Kiểm tra lỗi cụ thể
+                if (imagePart.getSize() > 10 * 1024 * 1024) {
+                    response.sendRedirect(request.getContextPath() + "/admin/products?error=file_too_large");
+                } else {
+                    response.sendRedirect(request.getContextPath() + "/admin/products?error=upload_failed");
+                }
+                return;
+            }
+            
+            LOGGER.log(Level.INFO, "Uploaded image path: " + imagePath + " for product ID: " + productId);
+            
+            // Cập nhật chỉ image_url trong database
+            if (productDAO.updateImageUrl(productId, imagePath)) {
+                LOGGER.log(Level.INFO, "Successfully updated image_url in database for product ID: " + productId);
+                // Redirect với timestamp để force reload
+                response.sendRedirect(request.getContextPath() + "/admin/products?success=image_updated&t=" + System.currentTimeMillis());
+            } else {
+                LOGGER.log(Level.SEVERE, "Failed to update image_url in database for product ID: " + productId);
+                response.sendRedirect(request.getContextPath() + "/admin/products?error=update_failed");
+            }
+            
+        } catch (NumberFormatException e) {
+            response.sendRedirect(request.getContextPath() + "/admin/products?error=invalid_id");
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Error updating product image", e);
             response.sendRedirect(request.getContextPath() + "/admin/products?error=server_error");
         }
     }

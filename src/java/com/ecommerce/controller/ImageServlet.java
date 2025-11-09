@@ -14,16 +14,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Servlet để serve ảnh từ thư mục bên ngoài webapp
+ * Servlet để serve ảnh từ thư mục webapp/images
  * Map URL pattern: /images/*
  * 
- * Cấu hình trong web.xml:
- * <init-param>
- *     <param-name>imageBasePath</param-name>
- *     <param-value>/var/www/ecommerce/images</param-value>
- * </init-param>
+ * Servlet này sẽ tự động tìm ảnh trong thư mục webapp/images
+ * hoặc thư mục được cấu hình qua init-param trong web.xml
  */
-@WebServlet(name = "ImageServlet", urlPatterns = {"/images/*"})
 public class ImageServlet extends HttpServlet {
     
     private static final Logger LOGGER = Logger.getLogger(ImageServlet.class.getName());
@@ -48,8 +44,18 @@ public class ImageServlet extends HttpServlet {
         // Nếu vẫn không có, dùng thư mục mặc định trong webapp
         if (imageBasePath == null || imageBasePath.trim().isEmpty()) {
             String webappPath = getServletContext().getRealPath("/");
-            imageBasePath = webappPath + "images";
-            LOGGER.log(Level.WARNING, "IMAGE_BASE_PATH chưa được cấu hình, dùng thư mục mặc định: " + imageBasePath);
+            if (webappPath != null) {
+                // Đảm bảo có trailing separator
+                if (!webappPath.endsWith(File.separator) && !webappPath.endsWith("/")) {
+                    webappPath += File.separator;
+                }
+                imageBasePath = webappPath + "images";
+            } else {
+                // Fallback: dùng relative path
+                imageBasePath = "images";
+                LOGGER.log(Level.WARNING, "getRealPath returned null, using relative path: " + imageBasePath);
+            }
+            LOGGER.log(Level.INFO, "IMAGE_BASE_PATH chưa được cấu hình, dùng thư mục mặc định: " + imageBasePath);
         }
         
         LOGGER.log(Level.INFO, "ImageServlet initialized with base path: " + imageBasePath);
@@ -73,9 +79,12 @@ public class ImageServlet extends HttpServlet {
         // Tạo đường dẫn file đầy đủ
         File imageFile = new File(imageBasePath, imagePath);
         
+        // Log để debug
+        LOGGER.log(Level.INFO, "Looking for image: " + imagePath + " at: " + imageFile.getAbsolutePath());
+        
         // Kiểm tra file có tồn tại không
         if (!imageFile.exists() || !imageFile.isFile()) {
-            LOGGER.log(Level.WARNING, "Image not found: " + imageFile.getAbsolutePath());
+            LOGGER.log(Level.WARNING, "Image not found: " + imageFile.getAbsolutePath() + " (exists: " + imageFile.exists() + ", isFile: " + (imageFile.exists() ? imageFile.isFile() : "N/A") + ")");
             // Nếu không tìm thấy, thử dùng placeholder
             File placeholderFile = new File(imageBasePath, "placeholder.jpg");
             if (placeholderFile.exists() && placeholderFile.isFile()) {

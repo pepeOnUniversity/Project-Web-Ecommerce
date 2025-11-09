@@ -329,6 +329,32 @@ public class ProductDAO {
     }
     
     /**
+     * Chỉ cập nhật image_url của sản phẩm
+     * Dùng khi admin chỉ muốn thay đổi ảnh mà không cần sửa thông tin khác
+     * 
+     * @param productId ID sản phẩm
+     * @param imageUrl Đường dẫn ảnh mới
+     * @return true nếu cập nhật thành công
+     */
+    public boolean updateImageUrl(int productId, String imageUrl) {
+        String sql = "UPDATE products SET image_url = ? WHERE product_id = ?";
+        
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setString(1, imageUrl);
+            ps.setInt(2, productId);
+            
+            int rowsAffected = ps.executeUpdate();
+            LOGGER.log(Level.INFO, "Updated image_url for product " + productId + ": " + imageUrl);
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error updating image_url for product: " + productId, e);
+            return false;
+        }
+    }
+    
+    /**
      * Map ResultSet thành Product object
      */
     private Product mapResultSetToProduct(ResultSet rs) throws SQLException {

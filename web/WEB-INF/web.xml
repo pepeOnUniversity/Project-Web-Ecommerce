@@ -57,26 +57,16 @@
     </session-config>
     
     <!-- Image Servlet Configuration -->
-    <!-- 
-    Uncomment và cấu hình đường dẫn thư mục ảnh khi deploy production
-    Thay đổi param-value thành đường dẫn thực tế trên server
-    Ví dụ Linux: /var/www/ecommerce/images
-    Ví dụ Windows: C:\ecommerce\images
-    -->
-    <!--
+    <!-- ImageServlet sẽ serve ảnh từ thư mục webapp/images -->
     <servlet>
         <servlet-name>ImageServlet</servlet-name>
         <servlet-class>com.ecommerce.controller.ImageServlet</servlet-class>
-        <init-param>
-            <param-name>imageBasePath</param-name>
-            <param-value>/var/www/ecommerce/images</param-value>
-        </init-param>
+        <!-- Không cần init-param, ImageServlet sẽ tự động dùng getRealPath("/") -->
     </servlet>
     <servlet-mapping>
         <servlet-name>ImageServlet</servlet-name>
         <url-pattern>/images/*</url-pattern>
     </servlet-mapping>
-    -->
     
 </web-app>
 
