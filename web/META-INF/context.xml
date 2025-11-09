@@ -1,2 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Context path="/WebEcommerce"/>
+<Context path="/WebEcommerce">
+    <!-- 
+    SMTP Configuration for Email Verification
+    
+    LƯU Ý: Code hiện tại đọc cấu hình từ System Properties hoặc Environment Variables,
+    không đọc từ JNDI Environment. Để cấu hình SMTP, bạn có thể:
+    
+    1. Thêm JVM arguments khi start Tomcat (trong setenv.bat/setenv.sh):
+       -Dsmtp.host=smtp.gmail.com
+       -Dsmtp.port=587
+       -Dsmtp.user=your-email@gmail.com
+       -Dsmtp.password=your-app-password
+       -Demail.from=your-email@gmail.com
+       -Demail.from.name=Ecommerce Store
+    
+    2. Hoặc set Environment Variables trong hệ điều hành
+    
+    3. Hoặc cấu hình trong IDE (NetBeans: Project Properties > Run > VM Options)
+    -->
+</Context>

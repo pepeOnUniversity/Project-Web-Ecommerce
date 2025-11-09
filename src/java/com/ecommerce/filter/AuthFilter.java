@@ -53,7 +53,25 @@ public class AuthFilter implements Filter {
             return;
         }
         
-        // Nếu đã đăng nhập, cho phép tiếp tục
+        // Kiểm tra email đã được xác minh chưa (trừ admin)
+        if (!user.isAdmin() && !user.isEmailVerified()) {
+            // Email chưa được xác minh, redirect đến trang verify-email
+            request.setAttribute("message", "Vui lòng xác minh email trước khi sử dụng dịch vụ.");
+            request.setAttribute("messageType", "warning");
+            request.setAttribute("email", user.getEmail());
+            
+            // Lưu URL để redirect sau khi verify
+            session.setAttribute("redirectAfterVerify", path);
+            
+            try {
+                httpRequest.getRequestDispatcher("/views/auth/verify-email.jsp").forward(request, response);
+            } catch (ServletException | IOException e) {
+                httpResponse.sendRedirect(contextPath + "/verify-email");
+            }
+            return;
+        }
+        
+        // Nếu đã đăng nhập và email đã được xác minh, cho phép tiếp tục
         chain.doFilter(request, response);
     }
     
