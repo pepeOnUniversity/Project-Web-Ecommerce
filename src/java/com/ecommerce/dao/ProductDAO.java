@@ -295,15 +295,35 @@ public class ProductDAO {
     public boolean deleteProduct(int productId) {
         String sql = "UPDATE products SET is_active = 0 WHERE product_id = ?";
         
-        try (Connection conn = dbConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        LOGGER.log(Level.INFO, "Deleting product (soft delete) with ID: " + productId);
+        
+        try (Connection conn = dbConnection.getConnection()) {
+            if (conn == null) {
+                LOGGER.log(Level.SEVERE, "Database connection is NULL when trying to delete product: " + productId);
+                return false;
+            }
             
-            ps.setInt(1, productId);
-            
-            int rowsAffected = ps.executeUpdate();
-            return rowsAffected > 0;
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, productId);
+                
+                int rowsAffected = ps.executeUpdate();
+                LOGGER.log(Level.INFO, "Delete product query executed. Rows affected: " + rowsAffected + " for product ID: " + productId);
+                
+                if (rowsAffected > 0) {
+                    LOGGER.log(Level.INFO, "Successfully soft deleted product: " + productId);
+                    return true;
+                } else {
+                    LOGGER.log(Level.WARNING, "No rows affected when deleting product: " + productId + ". Product may not exist.");
+                    return false;
+                }
+            }
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error deleting product", e);
+            LOGGER.log(Level.SEVERE, "SQL error deleting product: " + productId, e);
+            e.printStackTrace();
+            return false;
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Unexpected error deleting product: " + productId, e);
+            e.printStackTrace();
             return false;
         }
     }

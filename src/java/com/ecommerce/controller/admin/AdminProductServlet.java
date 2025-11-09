@@ -322,26 +322,60 @@ public class AdminProductServlet extends HttpServlet {
             throws ServletException, IOException {
         
         try {
-            int productId = Integer.parseInt(request.getParameter("id"));
+            String idParam = request.getParameter("id");
+            if (idParam == null || idParam.trim().isEmpty()) {
+                LOGGER.log(Level.WARNING, "Product ID parameter is missing");
+                response.sendRedirect(request.getContextPath() + "/admin/products?error=invalid_id");
+                return;
+            }
+            
+            int productId = Integer.parseInt(idParam);
+            LOGGER.log(Level.INFO, "Attempting to delete product with ID: " + productId);
             
             // Lấy thông tin sản phẩm để xóa ảnh (kể cả inactive)
             Product product = productDAO.getProductByIdForAdmin(productId);
-            if (product != null) {
-                String webappPath = getServletContext().getRealPath("/");
-                FileUploadUtil.deleteOldImage(product.getImageUrl(), webappPath);
+            if (product == null) {
+                LOGGER.log(Level.WARNING, "Product not found with ID: " + productId);
+                response.sendRedirect(request.getContextPath() + "/admin/products?error=product_not_found");
+                return;
+            }
+            
+            LOGGER.log(Level.INFO, "Found product: " + product.getProductName() + " (ID: " + productId + ")");
+            
+            // Xóa ảnh nếu có (không quan trọng nếu lỗi, vẫn tiếp tục xóa sản phẩm)
+            try {
+                if (product.getImageUrl() != null && !product.getImageUrl().trim().isEmpty()) {
+                    String webappPath = getServletContext().getRealPath("/");
+                    if (webappPath != null) {
+                        FileUploadUtil.deleteOldImage(product.getImageUrl(), webappPath);
+                        LOGGER.log(Level.INFO, "Attempted to delete image: " + product.getImageUrl());
+                    } else {
+                        LOGGER.log(Level.WARNING, "webappPath is null, cannot delete image");
+                    }
+                }
+            } catch (Exception e) {
+                // Log nhưng không dừng quá trình xóa
+                LOGGER.log(Level.WARNING, "Error deleting product image (continuing with product deletion): " + product.getImageUrl(), e);
             }
             
             // Xóa trong database (soft delete)
-            if (productDAO.deleteProduct(productId)) {
+            LOGGER.log(Level.INFO, "Attempting to soft delete product in database: " + productId);
+            boolean deleted = productDAO.deleteProduct(productId);
+            
+            if (deleted) {
+                LOGGER.log(Level.INFO, "Successfully deleted product: " + productId);
                 response.sendRedirect(request.getContextPath() + "/admin/products?success=deleted");
             } else {
+                LOGGER.log(Level.SEVERE, "Failed to delete product in database: " + productId);
                 response.sendRedirect(request.getContextPath() + "/admin/products?error=delete_failed");
             }
             
         } catch (NumberFormatException e) {
+            LOGGER.log(Level.WARNING, "Invalid product ID format: " + request.getParameter("id"), e);
             response.sendRedirect(request.getContextPath() + "/admin/products?error=invalid_id");
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error deleting product", e);
+            e.printStackTrace();
             response.sendRedirect(request.getContextPath() + "/admin/products?error=server_error");
         }
     }

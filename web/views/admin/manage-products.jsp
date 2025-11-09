@@ -67,9 +67,15 @@
     
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2><i class="fas fa-box me-2"></i>Quản lý sản phẩm</h2>
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductModal" onclick="resetAddForm()">
+        <div class="d-flex gap-2">
+            <div class="form-check form-switch align-self-center">
+                <input class="form-check-input" type="checkbox" id="showDeleted" ${param.showDeleted == 'true' ? 'checked' : ''} onchange="toggleDeletedProducts()">
+                <label class="form-check-label" for="showDeleted">Hiển thị sản phẩm đã xóa</label>
+            </div>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProductModal" onclick="resetAddForm()">
             <i class="fas fa-plus me-2"></i>Thêm sản phẩm mới
         </button>
+        </div>
     </div>
     
     <div class="card shadow-sm">
@@ -89,11 +95,19 @@
                     </thead>
                     <tbody>
                         <c:forEach var="product" items="${products}">
-                            <tr>
+                            <c:if test="${param.showDeleted == 'true' || product.active}">
+                            <tr class="${!product.active ? 'table-secondary' : ''}">
                                 <td>
                                     <c:set var="imageUrl" value="${product.displayImageUrl}"/>
                                     <c:if test="${not empty product.imageUrl && !product.imageUrl.contains('placeholder')}">
-                                        <c:set var="imageUrl" value="${product.displayImageUrl}?v=${product.productId}&t=${param.t != null ? param.t : ''}"/>
+                                        <c:choose>
+                                            <c:when test="${param.t != null && param.t != ''}">
+                                                <c:set var="imageUrl" value="${product.displayImageUrl}?v=${product.productId}&t=${param.t}"/>
+                                            </c:when>
+                                            <c:otherwise>
+                                                <c:set var="imageUrl" value="${product.displayImageUrl}?v=${product.productId}"/>
+                                            </c:otherwise>
+                                        </c:choose>
                                     </c:if>
                                     <img src="${imageUrl}" alt="${product.productName}" 
                                          class="img-thumbnail product-image" 
@@ -137,6 +151,7 @@
                                     </div>
                                 </td>
                             </tr>
+                            </c:if>
                         </c:forEach>
                     </tbody>
                 </table>
@@ -452,9 +467,21 @@ function editProduct(productId) {
 
 // Delete product
 function deleteProduct(productId) {
-    if (confirm('Bạn có chắc chắn muốn xóa sản phẩm này?')) {
+    if (confirm('Bạn có chắc chắn muốn xóa sản phẩm này? Sản phẩm sẽ bị ẩn khỏi danh sách nhưng vẫn có thể khôi phục.')) {
         window.location.href = '${pageContext.request.contextPath}/admin/products?action=delete&id=' + productId;
     }
+}
+
+// Toggle hiển thị sản phẩm đã xóa
+function toggleDeletedProducts() {
+    const showDeleted = document.getElementById('showDeleted').checked;
+    const url = new URL(window.location.href);
+    if (showDeleted) {
+        url.searchParams.set('showDeleted', 'true');
+    } else {
+        url.searchParams.delete('showDeleted');
+    }
+    window.location.href = url.toString();
 }
 
 // Update image only

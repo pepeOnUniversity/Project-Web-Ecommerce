@@ -138,21 +138,48 @@ public class FileUploadUtil {
      */
     public static void deleteOldImage(String oldImagePath, String webappPath) {
         if (oldImagePath == null || oldImagePath.trim().isEmpty()) {
+            LOGGER.log(Level.INFO, "Old image path is null or empty, skipping deletion");
+            return;
+        }
+        
+        if (webappPath == null || webappPath.trim().isEmpty()) {
+            LOGGER.log(Level.WARNING, "webappPath is null or empty, cannot delete image: " + oldImagePath);
             return;
         }
         
         // Chỉ xóa nếu là ảnh local (không phải URL)
         if (oldImagePath.startsWith("http://") || oldImagePath.startsWith("https://")) {
+            LOGGER.log(Level.INFO, "Old image is a URL, skipping deletion: " + oldImagePath);
             return;
         }
         
         try {
-            String fullPath = webappPath + oldImagePath;
+            // Normalize paths
+            String cleanWebappPath = webappPath.endsWith("/") || webappPath.endsWith("\\") 
+                    ? webappPath.substring(0, webappPath.length() - 1) 
+                    : webappPath;
+            
+            // Normalize image path (remove leading slash if present)
+            String cleanImagePath = oldImagePath.startsWith("/") || oldImagePath.startsWith("\\")
+                    ? oldImagePath.substring(1)
+                    : oldImagePath;
+            
+            // Build full path using File.separator for cross-platform compatibility
+            String fullPath = cleanWebappPath + File.separator + cleanImagePath.replace("/", File.separator).replace("\\", File.separator);
+            
             File oldFile = new File(fullPath);
             
+            LOGGER.log(Level.INFO, "Attempting to delete image: " + fullPath);
+            
             if (oldFile.exists() && oldFile.isFile()) {
-                oldFile.delete();
-                LOGGER.log(Level.INFO, "Old image deleted: " + oldImagePath);
+                boolean deleted = oldFile.delete();
+                if (deleted) {
+                    LOGGER.log(Level.INFO, "Successfully deleted old image: " + oldImagePath + " (full path: " + fullPath + ")");
+                } else {
+                    LOGGER.log(Level.WARNING, "Failed to delete old image file (delete() returned false): " + fullPath);
+                }
+            } else {
+                LOGGER.log(Level.INFO, "Old image file does not exist or is not a file: " + fullPath);
             }
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Error deleting old image: " + oldImagePath, e);
