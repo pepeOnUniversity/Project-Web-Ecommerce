@@ -70,14 +70,13 @@
                 <c:forEach var="related" items="${relatedProducts}">
                     <div class="col-md-3">
                         <div class="card product-card h-100 shadow-sm">
-                            <a href="${pageContext.request.contextPath}/product/${related.productId}">
-                                <img src="${related.displayImageUrl}" class="card-img-top" alt="${related.productName}" 
-                                     style="height: 200px; object-fit: cover;" 
-                                     onerror="if(this.src.indexOf('data:image') === -1) this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\'%3E%3Crect fill=\'%23ddd\' width=\'200\' height=\'200\'/%3E%3Ctext fill=\'%23999\' font-family=\'sans-serif\' font-size=\'14\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\'%3ENo Image%3C/text%3E%3C/svg%3E'">
+                            <a href="${pageContext.request.contextPath}/product/${related.productUrl}">
+                                <img src="${related.imageUrl}" class="card-img-top" alt="${related.productName}" 
+                                     style="height: 200px; object-fit: cover;">
                             </a>
                             <div class="card-body">
                                 <h6 class="card-title">
-                                    <a href="${pageContext.request.contextPath}/product/${related.productId}" 
+                                    <a href="${pageContext.request.contextPath}/product/${related.productUrl}" 
                                        class="text-decoration-none text-dark">
                                         ${related.productName}
                                     </a>
@@ -97,6 +96,7 @@
 </div>
 
 <jsp:include page="../common/footer.jsp"/>
+
 
 
 

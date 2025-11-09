@@ -11,6 +11,7 @@ public class Product {
 
     private int productId;
     private String productName;
+    private String slug; // URL-friendly identifier
     private String description;
     private BigDecimal price;
     private BigDecimal discountPrice;
@@ -140,6 +141,14 @@ public class Product {
         this.category = category;
     }
 
+    public String getSlug() {
+        return slug;
+    }
+
+    public void setSlug(String slug) {
+        this.slug = slug;
+    }
+
     /**
      * price after discount
      *
@@ -195,6 +204,18 @@ public class Product {
         } catch (ArithmeticException e) {
             return 0;
         }
+    }
+
+    /**
+     * Get product URL with slug for SEO-friendly URLs
+     * Format: /product/{id}-{slug} hoặc /product/{id} nếu chưa có slug
+     * @return Product URL path
+     */
+    public String getProductUrl() {
+        if (slug != null && !slug.trim().isEmpty()) {
+            return productId + "-" + slug;
+        }
+        return String.valueOf(productId);
     }
 
 }

@@ -2,6 +2,7 @@ package com.ecommerce.dao;
 
 import com.ecommerce.model.User;
 import com.ecommerce.util.DBConnection;
+import com.ecommerce.util.PasswordUtil;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -25,6 +26,8 @@ public class UserDAO {
     
     /**
      * Lấy user theo username
+     * @param username
+     * @return 
      */
     public User getUserByUsername(String username) {
         String sql = "SELECT * FROM users WHERE username = ?";
@@ -94,11 +97,17 @@ public class UserDAO {
     
     /**
      * Xác thực user (đăng nhập)
+     * @param username Username của user
+     * @param password Plain text password (không phải hash)
+     * @return User object nếu đăng nhập thành công, null nếu thất bại
      */
-    public User authenticate(String username, String passwordHash) {
+    public User authenticate(String username, String password) {
         User user = getUserByUsername(username);
-        if (user != null && user.isActive() && user.getPasswordHash().equals(passwordHash)) {
-            return user;
+        if (user != null && user.isActive()) {
+            // Sử dụng BCrypt để verify password
+            if (PasswordUtil.verifyPassword(password, user.getPasswordHash())) {
+                return user;
+            }
         }
         return null;
     }

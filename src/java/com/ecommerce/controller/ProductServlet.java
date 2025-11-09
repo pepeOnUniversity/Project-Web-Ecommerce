@@ -4,7 +4,7 @@ import com.ecommerce.dao.CategoryDAO;
 import com.ecommerce.dao.ProductDAO;
 import com.ecommerce.model.Category;
 import com.ecommerce.model.Product;
-import com.ecommerce.util.ImagePathUtil;
+import com.ecommerce.util.SlugUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
@@ -109,13 +109,35 @@ public class ProductServlet extends HttpServlet {
     
     /**
      * Hiển thị chi tiết sản phẩm
+     * Hỗ trợ cả ID và slug: /product/123 hoặc /product/123-slug-name hoặc /product/slug-name
      */
-    private void showProductDetail(HttpServletRequest request, HttpServletResponse response, String productIdStr)
+    private void showProductDetail(HttpServletRequest request, HttpServletResponse response, String pathSegment)
             throws ServletException, IOException {
         
         try {
-            int productId = Integer.parseInt(productIdStr);
-            Product product = productDAO.getProductById(productId);
+            Product product = null;
+            
+            // Thử extract ID từ path (format: "123-slug" hoặc chỉ "123")
+            Integer productId = SlugUtil.extractProductId(pathSegment);
+            
+            if (productId != null) {
+                // Có ID trong URL, dùng ID để lookup
+                product = productDAO.getProductById(productId);
+                
+                // Nếu tìm thấy product và có slug, redirect đến URL có slug (SEO-friendly)
+                if (product != null && product.getSlug() != null && !product.getSlug().isEmpty()) {
+                    String expectedUrl = productId + "-" + product.getSlug();
+                    if (!pathSegment.equals(expectedUrl)) {
+                        // Redirect đến URL đúng với slug
+                        String redirectUrl = request.getContextPath() + "/product/" + expectedUrl;
+                        response.sendRedirect(redirectUrl);
+                        return;
+                    }
+                }
+            } else {
+                // Không có ID, thử lookup bằng slug
+                product = productDAO.getProductBySlug(pathSegment);
+            }
             
             if (product == null) {
                 response.sendError(HttpServletResponse.SC_NOT_FOUND, "Product not found");
@@ -124,7 +146,8 @@ public class ProductServlet extends HttpServlet {
             
             // Lấy related products (cùng category)
             List<Product> relatedProducts = productDAO.getProductsByCategory(product.getCategoryId());
-            relatedProducts.removeIf(p -> p.getProductId() == productId);
+            final int currentProductId = product.getProductId();
+            relatedProducts.removeIf(p -> p.getProductId() == currentProductId);
             if (relatedProducts.size() > 4) {
                 relatedProducts = relatedProducts.subList(0, 4);
             }
@@ -134,8 +157,6 @@ public class ProductServlet extends HttpServlet {
             
             request.getRequestDispatcher("/views/customer/product-detail.jsp").forward(request, response);
             
-        } catch (NumberFormatException e) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST, "Invalid product ID");
         } catch (Exception e) {
             e.printStackTrace();
             request.setAttribute("error", "Có lỗi xảy ra khi tải chi tiết sản phẩm");

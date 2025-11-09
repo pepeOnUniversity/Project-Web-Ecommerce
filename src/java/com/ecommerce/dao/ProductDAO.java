@@ -2,6 +2,7 @@ package com.ecommerce.dao;
 
 import com.ecommerce.model.Product;
 import com.ecommerce.util.DBConnection;
+import com.ecommerce.util.SlugUtil;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -109,7 +110,59 @@ public class ProductDAO {
     }
     
     /**
-     * Lấy product theo ID (bất kể trạng thái) - dùng cho admin
+     * Lấy product theo slug
+     */
+    public Product getProductBySlug(String slug) {
+        String sql = "SELECT * FROM products WHERE slug = ? AND is_active = 1";
+        
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setString(1, slug);
+            
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return mapResultSetToProduct(rs);
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error getting product by slug: " + slug, e);
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Kiểm tra slug đã tồn tại chưa (cho product khác)
+     */
+    public boolean isSlugExists(String slug, Integer excludeProductId) {
+        String sql = "SELECT COUNT(*) FROM products WHERE slug = ?";
+        if (excludeProductId != null) {
+            sql += " AND product_id != ?";
+        }
+        
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setString(1, slug);
+            if (excludeProductId != null) {
+                ps.setInt(2, excludeProductId);
+            }
+            
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1) > 0;
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error checking slug existence: " + slug, e);
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Lấy featured products
      */
     public Product getProductByIdForAdmin(int productId) {
         String sql = "SELECT * FROM products WHERE product_id = ?";
@@ -234,22 +287,31 @@ public class ProductDAO {
      * Thêm product mới
      */
     public boolean addProduct(Product product) {
-        String sql = "INSERT INTO products (product_name, description, price, discount_price, " +
+        // Auto-generate slug nếu chưa có
+        String slug = product.getSlug();
+        if (slug == null || slug.trim().isEmpty()) {
+            String baseSlug = SlugUtil.generateSlug(product.getProductName());
+            slug = SlugUtil.generateUniqueSlug(baseSlug, s -> isSlugExists(s, null));
+            product.setSlug(slug);
+        }
+        
+        String sql = "INSERT INTO products (product_name, slug, description, price, discount_price, " +
                      "stock_quantity, category_id, image_url, is_featured, is_active) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             
             ps.setString(1, product.getProductName());
-            ps.setString(2, product.getDescription());
-            ps.setBigDecimal(3, product.getPrice());
-            ps.setBigDecimal(4, product.getDiscountPrice());
-            ps.setInt(5, product.getStockQuantity());
-            ps.setInt(6, product.getCategoryId());
-            ps.setString(7, product.getImageUrl());
-            ps.setBoolean(8, product.isFeatured());
-            ps.setBoolean(9, product.isActive());
+            ps.setString(2, slug);
+            ps.setString(3, product.getDescription());
+            ps.setBigDecimal(4, product.getPrice());
+            ps.setBigDecimal(5, product.getDiscountPrice());
+            ps.setInt(6, product.getStockQuantity());
+            ps.setInt(7, product.getCategoryId());
+            ps.setString(8, product.getImageUrl());
+            ps.setBoolean(9, product.isFeatured());
+            ps.setBoolean(10, product.isActive());
             
             int rowsAffected = ps.executeUpdate();
             return rowsAffected > 0;
@@ -263,7 +325,15 @@ public class ProductDAO {
      * Cập nhật product
      */
     public boolean updateProduct(Product product) {
-        String sql = "UPDATE products SET product_name = ?, description = ?, price = ?, " +
+        // Auto-generate slug nếu chưa có hoặc tên sản phẩm đã thay đổi
+        String slug = product.getSlug();
+        if (slug == null || slug.trim().isEmpty()) {
+            String baseSlug = SlugUtil.generateSlug(product.getProductName());
+            slug = SlugUtil.generateUniqueSlug(baseSlug, s -> isSlugExists(s, product.getProductId()));
+            product.setSlug(slug);
+        }
+        
+        String sql = "UPDATE products SET product_name = ?, slug = ?, description = ?, price = ?, " +
                      "discount_price = ?, stock_quantity = ?, category_id = ?, image_url = ?, " +
                      "is_featured = ?, is_active = ? WHERE product_id = ?";
         
@@ -271,15 +341,16 @@ public class ProductDAO {
              PreparedStatement ps = conn.prepareStatement(sql)) {
             
             ps.setString(1, product.getProductName());
-            ps.setString(2, product.getDescription());
-            ps.setBigDecimal(3, product.getPrice());
-            ps.setBigDecimal(4, product.getDiscountPrice());
-            ps.setInt(5, product.getStockQuantity());
-            ps.setInt(6, product.getCategoryId());
-            ps.setString(7, product.getImageUrl());
-            ps.setBoolean(8, product.isFeatured());
-            ps.setBoolean(9, product.isActive());
-            ps.setInt(10, product.getProductId());
+            ps.setString(2, slug);
+            ps.setString(3, product.getDescription());
+            ps.setBigDecimal(4, product.getPrice());
+            ps.setBigDecimal(5, product.getDiscountPrice());
+            ps.setInt(6, product.getStockQuantity());
+            ps.setInt(7, product.getCategoryId());
+            ps.setString(8, product.getImageUrl());
+            ps.setBoolean(9, product.isFeatured());
+            ps.setBoolean(10, product.isActive());
+            ps.setInt(11, product.getProductId());
             
             int rowsAffected = ps.executeUpdate();
             return rowsAffected > 0;
@@ -381,6 +452,15 @@ public class ProductDAO {
         Product product = new Product();
         product.setProductId(rs.getInt("product_id"));
         product.setProductName(rs.getString("product_name"));
+        
+        // Slug có thể null nếu chưa migrate dữ liệu cũ
+        try {
+            product.setSlug(rs.getString("slug"));
+        } catch (SQLException e) {
+            // Nếu column slug chưa tồn tại, set null
+            product.setSlug(null);
+        }
+        
         product.setDescription(rs.getString("description"));
         product.setPrice(rs.getBigDecimal("price"));
         product.setDiscountPrice(rs.getBigDecimal("discount_price"));
