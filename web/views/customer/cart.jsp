@@ -40,7 +40,8 @@
                                         <tr data-cart-item-id="${item.cartItemId}">
                                             <td>
                                                 <div class="d-flex align-items-center">
-                                                    <img src="${item.product.imageUrl}" alt="${item.product.productName}" 
+                                                    <img src="${item.product.displayImageUrl}" alt="${item.product.productName}" 
+                                                         onerror="if(this.src.indexOf('data:image') === -1) this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'100\' height=\'100\'%3E%3Crect fill=\'%23ddd\' width=\'100\' height=\'100\'/%3E%3Ctext fill=\'%23999\' font-family=\'sans-serif\' font-size=\'12\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\'%3ENo Image%3C/text%3E%3C/svg%3E'" 
                                                          class="img-thumbnail" style="width: 80px; height: 80px; object-fit: cover;">
                                                     <div class="ms-3">
                                                         <strong>${item.product.productName}</strong>

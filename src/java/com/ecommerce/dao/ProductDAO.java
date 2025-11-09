@@ -33,6 +33,45 @@ public class ProductDAO {
         List<Product> products = new ArrayList<>();
         String sql = "SELECT * FROM products WHERE is_active = 1 ORDER BY product_id DESC";
         
+        LOGGER.info("Getting all active products");
+        
+        try (Connection conn = dbConnection.getConnection()) {
+            if (conn == null) {
+                LOGGER.severe("Database connection is NULL!");
+                return products;
+            }
+            
+            try (PreparedStatement ps = conn.prepareStatement(sql);
+                 ResultSet rs = ps.executeQuery()) {
+                
+                while (rs.next()) {
+                    try {
+                        products.add(mapResultSetToProduct(rs));
+                    } catch (SQLException e) {
+                        LOGGER.log(Level.SEVERE, "Error mapping product from ResultSet", e);
+                    }
+                }
+                LOGGER.info("Total active products found: " + products.size());
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error getting all products", e);
+            e.printStackTrace();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Unexpected error getting all products", e);
+            e.printStackTrace();
+        }
+        
+        return products;
+    }
+    
+    /**
+     * Lấy tất cả products (kể cả inactive) - dùng cho admin
+     * @return 
+     */
+    public List<Product> getAllProductsForAdmin() {
+        List<Product> products = new ArrayList<>();
+        String sql = "SELECT * FROM products ORDER BY product_id DESC";
+        
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
@@ -41,14 +80,14 @@ public class ProductDAO {
                 products.add(mapResultSetToProduct(rs));
             }
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error getting all products", e);
+            LOGGER.log(Level.SEVERE, "Error getting all products for admin", e);
         }
         
         return products;
     }
     
     /**
-     * Lấy product theo ID
+     * Lấy product theo ID (chỉ lấy active)
      */
     public Product getProductById(int productId) {
         String sql = "SELECT * FROM products WHERE product_id = ? AND is_active = 1";
@@ -125,22 +164,68 @@ public class ProductDAO {
     /**
      * Lấy featured products
      */
-    public List<Product> getFeaturedProducts(int limit) {
-        List<Product> products = new ArrayList<>();
-        String sql = "SELECT TOP (?) * FROM products WHERE is_featured = 1 AND is_active = 1 ORDER BY product_id DESC";
+    public Product getProductByIdForAdmin(int productId) {
+        String sql = "SELECT * FROM products WHERE product_id = ?";
         
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             
-            ps.setInt(1, limit);
+            ps.setInt(1, productId);
             
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    products.add(mapResultSetToProduct(rs));
+                if (rs.next()) {
+                    return mapResultSetToProduct(rs);
                 }
             }
         } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error getting product by ID for admin: " + productId, e);
+        }
+        
+        return null;
+    }
+    
+    /**
+     * Lấy featured products
+     */
+    public List<Product> getFeaturedProducts(int limit) {
+        List<Product> products = new ArrayList<>();
+        // SQL Server không hỗ trợ TOP với parameter, phải dùng string concatenation hoặc cách khác
+        // Sử dụng cách an toàn hơn: lấy tất cả rồi limit trong code, hoặc dùng OFFSET/FETCH
+        String sql = "SELECT * FROM products WHERE is_featured = 1 AND is_active = 1 ORDER BY product_id DESC";
+        
+        LOGGER.info("Getting featured products with limit: " + limit);
+        LOGGER.info("SQL: " + sql);
+        
+        try (Connection conn = dbConnection.getConnection()) {
+            if (conn == null) {
+                LOGGER.severe("Database connection is NULL!");
+                return products;
+            }
+            LOGGER.info("Database connection successful");
+            
+            try (PreparedStatement ps = conn.prepareStatement(sql);
+                 ResultSet rs = ps.executeQuery()) {
+                
+                LOGGER.info("Executing query...");
+                int count = 0;
+                while (rs.next() && count < limit) {
+                    try {
+                        Product product = mapResultSetToProduct(rs);
+                        products.add(product);
+                        count++;
+                        LOGGER.info("Added product: " + product.getProductId() + " - " + product.getProductName());
+                    } catch (SQLException e) {
+                        LOGGER.log(Level.SEVERE, "Error mapping product from ResultSet", e);
+                    }
+                }
+                LOGGER.info("Total featured products found: " + products.size());
+            }
+        } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error getting featured products", e);
+            e.printStackTrace();
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Unexpected error getting featured products", e);
+            e.printStackTrace();
         }
         
         return products;
@@ -281,15 +366,35 @@ public class ProductDAO {
     public boolean deleteProduct(int productId) {
         String sql = "UPDATE products SET is_active = 0 WHERE product_id = ?";
         
-        try (Connection conn = dbConnection.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        LOGGER.log(Level.INFO, "Deleting product (soft delete) with ID: " + productId);
+        
+        try (Connection conn = dbConnection.getConnection()) {
+            if (conn == null) {
+                LOGGER.log(Level.SEVERE, "Database connection is NULL when trying to delete product: " + productId);
+                return false;
+            }
             
-            ps.setInt(1, productId);
-            
-            int rowsAffected = ps.executeUpdate();
-            return rowsAffected > 0;
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, productId);
+                
+                int rowsAffected = ps.executeUpdate();
+                LOGGER.log(Level.INFO, "Delete product query executed. Rows affected: " + rowsAffected + " for product ID: " + productId);
+                
+                if (rowsAffected > 0) {
+                    LOGGER.log(Level.INFO, "Successfully soft deleted product: " + productId);
+                    return true;
+                } else {
+                    LOGGER.log(Level.WARNING, "No rows affected when deleting product: " + productId + ". Product may not exist.");
+                    return false;
+                }
+            }
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error deleting product", e);
+            LOGGER.log(Level.SEVERE, "SQL error deleting product: " + productId, e);
+            e.printStackTrace();
+            return false;
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Unexpected error deleting product: " + productId, e);
+            e.printStackTrace();
             return false;
         }
     }
@@ -310,6 +415,32 @@ public class ProductDAO {
             return rowsAffected > 0;
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error updating stock for product: " + productId, e);
+            return false;
+        }
+    }
+    
+    /**
+     * Chỉ cập nhật image_url của sản phẩm
+     * Dùng khi admin chỉ muốn thay đổi ảnh mà không cần sửa thông tin khác
+     * 
+     * @param productId ID sản phẩm
+     * @param imageUrl Đường dẫn ảnh mới
+     * @return true nếu cập nhật thành công
+     */
+    public boolean updateImageUrl(int productId, String imageUrl) {
+        String sql = "UPDATE products SET image_url = ? WHERE product_id = ?";
+        
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setString(1, imageUrl);
+            ps.setInt(2, productId);
+            
+            int rowsAffected = ps.executeUpdate();
+            LOGGER.log(Level.INFO, "Updated image_url for product " + productId + ": " + imageUrl);
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error updating image_url for product: " + productId, e);
             return false;
         }
     }

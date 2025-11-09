@@ -8,11 +8,18 @@
 <jsp:include page="../common/navbar.jsp"/>
 
 <div class="container-fluid my-4">
+    <div class="row">
+        <jsp:include page="admin-sidebar.jsp">
+            <jsp:param name="currentPage" value="dashboard"/>
+        </jsp:include>
+        
+        <!-- Main Content -->
+        <div class="col-md-9">
     <h2 class="mb-4"><i class="fas fa-chart-line me-2"></i>Admin Dashboard</h2>
     
     <!-- Statistics Cards -->
-    <div class="row g-4 mb-4">
-        <div class="col-md-3">
+    <div class="row g-3 mb-4">
+        <div class="col-md-6 col-lg-3">
             <div class="card shadow-sm border-primary">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
@@ -28,7 +35,7 @@
             </div>
         </div>
         
-        <div class="col-md-3">
+        <div class="col-md-6 col-lg-3">
             <div class="card shadow-sm border-success">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
@@ -42,7 +49,7 @@
             </div>
         </div>
         
-        <div class="col-md-3">
+        <div class="col-md-6 col-lg-3">
             <div class="card shadow-sm border-info">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
@@ -56,7 +63,7 @@
             </div>
         </div>
         
-        <div class="col-md-3">
+        <div class="col-md-6 col-lg-3">
             <div class="card shadow-sm border-warning">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
@@ -154,9 +161,12 @@
             </div>
         </div>
     </c:if>
+        </div>
+    </div>
 </div>
 
 <jsp:include page="../common/footer.jsp"/>
+
 
 
 

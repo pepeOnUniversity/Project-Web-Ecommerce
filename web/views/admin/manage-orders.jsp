@@ -8,7 +8,29 @@
 <jsp:include page="../common/navbar.jsp"/>
 
 <div class="container-fluid my-4">
+    <div class="row">
+        <jsp:include page="admin-sidebar.jsp">
+            <jsp:param name="currentPage" value="orders"/>
+        </jsp:include>
+        
+        <!-- Main Content -->
+        <div class="col-md-9">
     <h2 class="mb-4"><i class="fas fa-shopping-bag me-2"></i>Quản lý đơn hàng</h2>
+    
+    <!-- Success/Error Messages -->
+    <c:if test="${param.success != null}">
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>Cập nhật trạng thái đơn hàng thành công!
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    </c:if>
+    
+    <c:if test="${param.error != null}">
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>Có lỗi xảy ra khi cập nhật trạng thái đơn hàng!
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    </c:if>
     
     <div class="card shadow-sm">
         <div class="card-body">
@@ -25,6 +47,16 @@
                         </tr>
                     </thead>
                     <tbody>
+                        <c:choose>
+                            <c:when test="${empty orders}">
+                                <tr>
+                                    <td colspan="6" class="text-center py-5">
+                                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                                        <p class="text-muted">Chưa có đơn hàng nào</p>
+                                    </td>
+                                </tr>
+                            </c:when>
+                            <c:otherwise>
                         <c:forEach var="order" items="${orders}">
                             <tr>
                                 <td>#${order.orderId}</td>
@@ -52,14 +84,19 @@
                                 </td>
                             </tr>
                         </c:forEach>
+                            </c:otherwise>
+                        </c:choose>
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
+        </div>
+    </div>
 </div>
 
 <jsp:include page="../common/footer.jsp"/>
+
 
 
 
