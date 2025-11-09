@@ -28,9 +28,6 @@
                 <c:when test="${param.success == 'deleted'}">
                     <i class="fas fa-check-circle me-2"></i>Xóa sản phẩm thành công!
                 </c:when>
-                <c:when test="${param.success == 'image_updated'}">
-                    <i class="fas fa-check-circle me-2"></i>Cập nhật ảnh sản phẩm thành công!
-                </c:when>
             </c:choose>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
@@ -50,15 +47,6 @@
                 </c:when>
                 <c:when test="${param.error == 'product_in_use'}">
                     <i class="fas fa-exclamation-circle me-2"></i>Không thể xóa sản phẩm này vì sản phẩm đang được sử dụng trong giỏ hàng hoặc đơn hàng!
-                </c:when>
-                <c:when test="${param.error == 'no_image'}">
-                    <i class="fas fa-exclamation-circle me-2"></i>Vui lòng chọn ảnh để cập nhật!
-                </c:when>
-                <c:when test="${param.error == 'upload_failed'}">
-                    <i class="fas fa-exclamation-circle me-2"></i>Upload ảnh thất bại! Vui lòng kiểm tra định dạng và kích thước file.
-                </c:when>
-                <c:when test="${param.error == 'file_too_large'}">
-                    <i class="fas fa-exclamation-circle me-2"></i>File ảnh quá lớn! Kích thước tối đa là 10MB.
                 </c:when>
                 <c:otherwise>
                     <i class="fas fa-exclamation-circle me-2"></i>Có lỗi xảy ra: ${param.error}
@@ -143,11 +131,6 @@
                                         <button class="btn btn-sm btn-warning" onclick="editProduct(${product.productId})" title="Sửa thông tin sản phẩm">
                                         <i class="fas fa-edit"></i> Sửa
                                     </button>
-                                        <button class="btn btn-sm btn-info" 
-                                                onclick="updateImageProduct(${product.productId}, '${product.displayImageUrl}')" 
-                                                title="Chỉ cập nhật ảnh">
-                                            <i class="fas fa-image"></i> Đổi ảnh
-                                        </button>
                                         <button class="btn btn-sm btn-danger" onclick="deleteProduct(${product.productId})" title="Xóa sản phẩm">
                                         <i class="fas fa-trash"></i> Xóa
                                     </button>
@@ -167,7 +150,7 @@
 <div class="modal fade" id="addProductModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <form id="addProductForm" action="${pageContext.request.contextPath}/admin/products" method="POST" enctype="multipart/form-data">
+            <form id="addProductForm" action="${pageContext.request.contextPath}/admin/products" method="POST">
                 <input type="hidden" name="action" value="add">
             <div class="modal-header">
                 <h5 class="modal-title">Thêm sản phẩm mới</h5>
@@ -208,11 +191,11 @@
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label for="productImage" class="form-label">Hình ảnh sản phẩm</label>
-                        <input type="file" class="form-control" id="productImage" name="productImage" accept="image/*">
-                        <small class="form-text text-muted">Chấp nhận: JPG, PNG, GIF, WEBP (tối đa 10MB)</small>
+                        <label for="imageUrl" class="form-label">Link ảnh sản phẩm</label>
+                        <input type="url" class="form-control" id="imageUrl" name="imageUrl" placeholder="https://example.com/image.jpg">
+                        <small class="form-text text-muted">Nhập link ảnh từ internet (URL)</small>
                         <div id="imagePreview" class="mt-2" style="display: none;">
-                            <img id="previewImg" src="" alt="Preview" style="max-width: 200px; max-height: 200px; object-fit: cover;">
+                            <img id="previewImg" src="" alt="Preview" style="max-width: 200px; max-height: 200px; object-fit: contain;" onerror="this.style.display='none';">
                         </div>
                     </div>
                     <div class="row">
@@ -247,7 +230,7 @@
 <div class="modal fade" id="editProductModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <form id="editProductForm" action="${pageContext.request.contextPath}/admin/products" method="POST" enctype="multipart/form-data">
+            <form id="editProductForm" action="${pageContext.request.contextPath}/admin/products" method="POST">
                 <input type="hidden" name="action" value="update">
                 <input type="hidden" id="editProductId" name="productId">
                 <div class="modal-header">
@@ -289,15 +272,15 @@
                         </div>
                     </div>
                     <div class="mb-3">
-                        <label for="editProductImage" class="form-label">Hình ảnh sản phẩm</label>
-                        <input type="file" class="form-control" id="editProductImage" name="productImage" accept="image/*">
-                        <small class="form-text text-muted">Chấp nhận: JPG, PNG, GIF, WEBP (tối đa 10MB). Để trống nếu không muốn thay đổi.</small>
+                        <label for="editImageUrl" class="form-label">Link ảnh sản phẩm</label>
+                        <input type="url" class="form-control" id="editImageUrl" name="imageUrl" placeholder="https://example.com/image.jpg">
+                        <small class="form-text text-muted">Nhập link ảnh mới từ internet (URL). Để trống nếu không muốn thay đổi.</small>
                         <div id="editImagePreview" class="mt-2">
                             <div class="mb-2">
                                 <strong>Ảnh hiện tại:</strong>
                             </div>
                             <img id="editPreviewImg" src="" alt="Current image" 
-                                 style="max-width: 200px; max-height: 200px; object-fit: cover; border: 2px solid #dee2e6; border-radius: 4px;"
+                                 style="max-width: 200px; max-height: 200px; object-fit: contain; border: 2px solid #dee2e6; border-radius: 4px;"
                                  onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\'%3E%3Crect fill=\'%23ddd\' width=\'200\' height=\'200\'/%3E%3Ctext fill=\'%23999\' font-family=\'sans-serif\' font-size=\'14\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\'%3ENo Image%3C/text%3E%3C/svg%3E'">
                             <div class="mt-2 text-muted small" id="editCurrentImageInfo"></div>
                         </div>
@@ -330,81 +313,37 @@
     </div>
 </div>
 
-<!-- Update Image Only Modal -->
-<div class="modal fade" id="updateImageModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form id="updateImageForm" action="${pageContext.request.contextPath}/admin/products" method="POST" enctype="multipart/form-data">
-                <input type="hidden" name="action" value="updateImage">
-                <input type="hidden" id="updateImageProductId" name="productId">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="fas fa-image me-2"></i>Cập nhật ảnh sản phẩm</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="updateImageFile" class="form-label">Chọn ảnh mới <span class="text-danger">*</span></label>
-                        <input type="file" class="form-control" id="updateImageFile" name="productImage" accept="image/*" required>
-                        <small class="form-text text-muted">Chấp nhận: JPG, PNG, GIF, WEBP (tối đa 10MB)</small>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Ảnh hiện tại:</label>
-                        <div id="currentImageContainer" class="text-center">
-                            <img id="currentProductImage" src="" alt="Current image" 
-                                 style="max-width: 300px; max-height: 300px; object-fit: cover; border: 2px solid #dee2e6; border-radius: 4px;"
-                                 onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'300\' height=\'300\'%3E%3Crect fill=\'%23ddd\' width=\'300\' height=\'300\'/%3E%3Ctext fill=\'%23999\' font-family=\'sans-serif\' font-size=\'16\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\'%3ENo Image%3C/text%3E%3C/svg%3E'">
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Preview ảnh mới:</label>
-                        <div id="newImagePreview" class="text-center" style="display: none;">
-                            <img id="newImagePreviewImg" src="" alt="Preview" 
-                                 style="max-width: 300px; max-height: 300px; object-fit: cover; border: 2px solid #0d6efd; border-radius: 4px;">
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-upload me-2"></i>Cập nhật ảnh
-                    </button>
-                </div>
-            </form>
-        </div>
-            </div>
-        </div>
-    </div>
-</div>
-
 <jsp:include page="../common/footer.jsp"/>
 
 <script>
-// Preview ảnh khi chọn file (Add form)
-document.getElementById('productImage').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            document.getElementById('previewImg').src = e.target.result;
-            document.getElementById('imagePreview').style.display = 'block';
-        };
-        reader.readAsDataURL(file);
+// Preview ảnh khi nhập URL (Add form)
+document.getElementById('imageUrl').addEventListener('input', function(e) {
+    const imageUrl = e.target.value.trim();
+    if (imageUrl && isValidUrl(imageUrl)) {
+        document.getElementById('previewImg').src = imageUrl;
+        document.getElementById('imagePreview').style.display = 'block';
     } else {
         document.getElementById('imagePreview').style.display = 'none';
     }
 });
 
-// Preview ảnh khi chọn file (Edit form)
-document.getElementById('editProductImage').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            document.getElementById('editPreviewImg').src = e.target.result;
-        };
-        reader.readAsDataURL(file);
+// Preview ảnh khi nhập URL (Edit form)
+document.getElementById('editImageUrl').addEventListener('input', function(e) {
+    const imageUrl = e.target.value.trim();
+    if (imageUrl && isValidUrl(imageUrl)) {
+        document.getElementById('editPreviewImg').src = imageUrl;
     }
 });
+
+// Helper function để validate URL
+function isValidUrl(string) {
+    try {
+        const url = new URL(string);
+        return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch (_) {
+        return false;
+    }
+}
 
 // Reset form khi mở modal add
 function resetAddForm() {
@@ -487,89 +426,6 @@ function toggleDeletedProducts() {
     window.location.href = url.toString();
 }
 
-// Update image only
-function updateImageProduct(productId, currentImageUrl) {
-    // Set product ID vào form
-    document.getElementById('updateImageProductId').value = productId;
-    
-    // Hiển thị ảnh hiện tại
-    const currentImage = document.getElementById('currentProductImage');
-    if (currentImageUrl && currentImageUrl.trim() !== '') {
-        currentImage.src = currentImageUrl;
-    } else {
-        currentImage.src = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'300\' height=\'300\'%3E%3Crect fill=\'%23ddd\' width=\'300\' height=\'300\'/%3E%3Ctext fill=\'%23999\' font-family=\'sans-serif\' font-size=\'16\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\'%3ENo Image%3C/text%3E%3C/svg%3E';
-    }
-    
-    // Reset form
-    document.getElementById('updateImageForm').reset();
-    document.getElementById('updateImageProductId').value = productId; // Set lại sau khi reset
-    document.getElementById('newImagePreview').style.display = 'none';
-    
-    // Mở modal
-    const updateImageModal = new bootstrap.Modal(document.getElementById('updateImageModal'));
-    updateImageModal.show();
-}
-
-// Preview ảnh mới khi chọn file (Update Image Modal)
-document.addEventListener('DOMContentLoaded', function() {
-    const updateImageFileInput = document.getElementById('updateImageFile');
-    if (updateImageFileInput) {
-        updateImageFileInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-                // Validate file size (10MB)
-                if (file.size > 10 * 1024 * 1024) {
-                    alert('File ảnh quá lớn! Kích thước tối đa là 10MB.');
-                    this.value = '';
-                    document.getElementById('newImagePreview').style.display = 'none';
-                    return;
-                }
-                
-                // Validate file type
-                const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-                if (!validTypes.includes(file.type)) {
-                    alert('Định dạng file không hợp lệ! Chỉ chấp nhận: JPG, PNG, GIF, WEBP.');
-                    this.value = '';
-                    document.getElementById('newImagePreview').style.display = 'none';
-                    return;
-                }
-                
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    document.getElementById('newImagePreviewImg').src = e.target.result;
-                    document.getElementById('newImagePreview').style.display = 'block';
-                };
-                reader.readAsDataURL(file);
-            } else {
-                document.getElementById('newImagePreview').style.display = 'none';
-            }
-        });
-    }
-});
-
-// Force reload images after successful image update
-<c:if test="${param.success == 'image_updated'}">
-    document.addEventListener('DOMContentLoaded', function() {
-        // Reload all product images to show updated images
-        const productImages = document.querySelectorAll('.product-image');
-        productImages.forEach(function(img) {
-            const currentSrc = img.src;
-            // Remove existing cache-busting parameters and add new timestamp
-            const baseUrl = currentSrc.split('?')[0];
-            const newSrc = baseUrl + '?v=' + img.dataset.productId + '&t=' + Date.now();
-            img.src = newSrc;
-        });
-        
-        // Also reload the page after a short delay to ensure fresh data
-        setTimeout(function() {
-            // Remove the success parameter to avoid infinite reload
-            const url = new URL(window.location.href);
-            url.searchParams.delete('success');
-            url.searchParams.delete('t');
-            window.history.replaceState({}, '', url);
-        }, 100);
-    });
-</c:if>
 </script>
 
 

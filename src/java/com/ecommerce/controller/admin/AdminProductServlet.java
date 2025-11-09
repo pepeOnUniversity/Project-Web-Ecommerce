@@ -3,14 +3,11 @@ package com.ecommerce.controller.admin;
 import com.ecommerce.dao.CategoryDAO;
 import com.ecommerce.dao.ProductDAO;
 import com.ecommerce.model.Product;
-import com.ecommerce.util.FileUploadUtil;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.Part;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.logging.Level;
@@ -18,14 +15,9 @@ import java.util.logging.Logger;
 
 /**
  * Admin Product Servlet
- * Xử lý CRUD sản phẩm với upload ảnh
+ * Xử lý CRUD sản phẩm với link ảnh
  */
 @WebServlet(name = "AdminProductServlet", urlPatterns = {"/admin/products"})
-@MultipartConfig(
-    fileSizeThreshold = 1024 * 1024,  // 1MB
-    maxFileSize = 10 * 1024 * 1024,   // 10MB
-    maxRequestSize = 10 * 1024 * 1024 // 10MB
-)
 public class AdminProductServlet extends HttpServlet {
     
     private static final Logger LOGGER = Logger.getLogger(AdminProductServlet.class.getName());
@@ -86,8 +78,6 @@ public class AdminProductServlet extends HttpServlet {
             addProduct(request, response);
         } else if ("update".equals(action)) {
             updateProduct(request, response);
-        } else if ("updateImage".equals(action)) {
-            updateProductImage(request, response);
         } else {
             response.sendRedirect(request.getContextPath() + "/admin/products?error=invalid_action");
         }
@@ -157,17 +147,16 @@ public class AdminProductServlet extends HttpServlet {
             product.setFeatured(isFeatured);
             product.setActive(isActive);
             
-            // Upload ảnh nếu có
-            Part imagePart = request.getPart("productImage");
-            if (imagePart != null && imagePart.getSize() > 0) {
-                String webappPath = getServletContext().getRealPath("/");
-                String imagePath = FileUploadUtil.uploadProductImage(imagePart, productName, webappPath);
-                
-                if (imagePath != null) {
-                    product.setImageUrl(imagePath);
+            // Lấy link ảnh nếu có
+            String imageUrl = request.getParameter("imageUrl");
+            if (imageUrl != null && !imageUrl.trim().isEmpty()) {
+                // Validate URL format
+                if (isValidImageUrl(imageUrl)) {
+                    product.setImageUrl(imageUrl.trim());
                 } else {
-                    // Nếu upload thất bại, vẫn cho phép tạo sản phẩm nhưng không có ảnh
-                    LOGGER.log(Level.WARNING, "Failed to upload image for new product: " + productName);
+                    LOGGER.log(Level.WARNING, "Invalid image URL format for new product: " + productName);
+                    response.sendRedirect(request.getContextPath() + "/admin/products?error=invalid_image_url");
+                    return;
                 }
             }
             
@@ -222,24 +211,19 @@ public class AdminProductServlet extends HttpServlet {
             existingProduct.setFeatured(isFeatured);
             existingProduct.setActive(isActive);
             
-            // Upload ảnh mới nếu có
-            Part imagePart = request.getPart("productImage");
-            if (imagePart != null && imagePart.getSize() > 0) {
-                String webappPath = getServletContext().getRealPath("/");
-                
-                // Xóa ảnh cũ
-                FileUploadUtil.deleteOldImage(existingProduct.getImageUrl(), webappPath);
-                
-                // Upload ảnh mới
-                String imagePath = FileUploadUtil.uploadProductImage(imagePart, productName, webappPath);
-                
-                if (imagePath != null) {
-                    existingProduct.setImageUrl(imagePath);
+            // Cập nhật link ảnh mới nếu có
+            String imageUrl = request.getParameter("imageUrl");
+            if (imageUrl != null && !imageUrl.trim().isEmpty()) {
+                // Validate URL format
+                if (isValidImageUrl(imageUrl)) {
+                    existingProduct.setImageUrl(imageUrl.trim());
+                } else {
+                    LOGGER.log(Level.WARNING, "Invalid image URL format for product update: " + productId);
+                    response.sendRedirect(request.getContextPath() + "/admin/products?error=invalid_image_url");
+                    return;
                 }
-            } else {
-                // Nếu không upload ảnh mới, giữ nguyên ảnh cũ
-                // Không cần làm gì, existingProduct đã có imageUrl từ database
             }
+            // Nếu không nhập link ảnh mới, giữ nguyên ảnh cũ (existingProduct đã có imageUrl từ database)
             
             // Cập nhật database
             if (productDAO.updateProduct(existingProduct)) {
@@ -255,63 +239,18 @@ public class AdminProductServlet extends HttpServlet {
     }
     
     /**
-     * Chỉ cập nhật ảnh sản phẩm (không cần sửa thông tin khác)
+     * Validate image URL format
      */
-    private void updateProductImage(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
-        
+    private boolean isValidImageUrl(String url) {
+        if (url == null || url.trim().isEmpty()) {
+            return false;
+        }
         try {
-            int productId = Integer.parseInt(request.getParameter("productId"));
-            
-            // Lấy sản phẩm hiện tại
-            Product existingProduct = productDAO.getProductByIdForAdmin(productId);
-            if (existingProduct == null) {
-                response.sendRedirect(request.getContextPath() + "/admin/products?error=product_not_found");
-                return;
-            }
-            
-            // Kiểm tra có file upload không
-            Part imagePart = request.getPart("productImage");
-            if (imagePart == null || imagePart.getSize() == 0) {
-                response.sendRedirect(request.getContextPath() + "/admin/products?error=no_image");
-                return;
-            }
-            
-            String webappPath = getServletContext().getRealPath("/");
-            
-            // Xóa ảnh cũ
-            FileUploadUtil.deleteOldImage(existingProduct.getImageUrl(), webappPath);
-            
-            // Upload ảnh mới
-            String imagePath = FileUploadUtil.uploadProductImage(imagePart, existingProduct.getProductName(), webappPath);
-            
-            if (imagePath == null) {
-                // Kiểm tra lỗi cụ thể
-                if (imagePart.getSize() > 10 * 1024 * 1024) {
-                    response.sendRedirect(request.getContextPath() + "/admin/products?error=file_too_large");
-                } else {
-                    response.sendRedirect(request.getContextPath() + "/admin/products?error=upload_failed");
-                }
-                return;
-            }
-            
-            LOGGER.log(Level.INFO, "Uploaded image path: " + imagePath + " for product ID: " + productId);
-            
-            // Cập nhật chỉ image_url trong database
-            if (productDAO.updateImageUrl(productId, imagePath)) {
-                LOGGER.log(Level.INFO, "Successfully updated image_url in database for product ID: " + productId);
-                // Redirect với timestamp để force reload
-                response.sendRedirect(request.getContextPath() + "/admin/products?success=image_updated&t=" + System.currentTimeMillis());
-            } else {
-                LOGGER.log(Level.SEVERE, "Failed to update image_url in database for product ID: " + productId);
-                response.sendRedirect(request.getContextPath() + "/admin/products?error=update_failed");
-            }
-            
-        } catch (NumberFormatException e) {
-            response.sendRedirect(request.getContextPath() + "/admin/products?error=invalid_id");
-        } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Error updating product image", e);
-            response.sendRedirect(request.getContextPath() + "/admin/products?error=server_error");
+            java.net.URL urlObj = new java.net.URL(url.trim());
+            String protocol = urlObj.getProtocol();
+            return "http".equals(protocol) || "https".equals(protocol);
+        } catch (java.net.MalformedURLException e) {
+            return false;
         }
     }
     
@@ -350,21 +289,7 @@ public class AdminProductServlet extends HttpServlet {
                 return;
             }
             
-            // Xóa ảnh nếu có (không quan trọng nếu lỗi, vẫn tiếp tục xóa sản phẩm)
-            try {
-                if (product.getImageUrl() != null && !product.getImageUrl().trim().isEmpty()) {
-                    String webappPath = getServletContext().getRealPath("/");
-                    if (webappPath != null) {
-                        FileUploadUtil.deleteOldImage(product.getImageUrl(), webappPath);
-                        LOGGER.log(Level.INFO, "Attempted to delete image: " + product.getImageUrl());
-                    } else {
-                        LOGGER.log(Level.WARNING, "webappPath is null, cannot delete image");
-                    }
-                }
-            } catch (Exception e) {
-                // Log nhưng không dừng quá trình xóa
-                LOGGER.log(Level.WARNING, "Error deleting product image (continuing with product deletion): " + product.getImageUrl(), e);
-            }
+            // Không cần xóa ảnh vì chỉ lưu link URL, không lưu file local
             
             // Xóa trong database (soft delete)
             LOGGER.log(Level.INFO, "Attempting to soft delete product in database: " + productId);
