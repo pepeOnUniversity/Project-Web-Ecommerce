@@ -71,8 +71,10 @@
             <div class="row g-4">
                 <c:forEach var="product" items="${products}">
                     <div class="col-lg-3 col-md-4 col-sm-6" data-aos="fade-up">
-                        <div class="card product-card h-100 shadow-sm">
-                            <a href="${pageContext.request.contextPath}/product/${product.productUrl}">
+                        <div class="card product-card h-100 shadow-sm clickable-product-card" 
+                             data-product-url="${pageContext.request.contextPath}/product/${product.productUrl}"
+                             style="cursor: pointer;">
+                            <a href="${pageContext.request.contextPath}/product/${product.productUrl}" class="text-decoration-none">
                                 <c:if test="${product.discountPrice != null && product.discountPrice > 0}">
                                     <span class="badge bg-danger position-absolute top-0 start-0 m-2">
                                         -${product.discountPercentage}%
@@ -101,7 +103,8 @@
                                         </c:if>
                                     </div>
                                     <button class="btn btn-primary w-100 btn-add-cart" 
-                                            data-product-id="${product.productId}">
+                                            data-product-id="${product.productId}"
+                                            onclick="event.stopPropagation();">
                                         <i class="fas fa-cart-plus me-2"></i>Thêm vào giỏ
                                     </button>
                                 </div>

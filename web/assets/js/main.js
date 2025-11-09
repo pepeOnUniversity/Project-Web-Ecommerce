@@ -31,6 +31,20 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
+    
+    // Make product cards clickable
+    document.querySelectorAll('.clickable-product-card').forEach(card => {
+        card.addEventListener('click', function(e) {
+            // Don't navigate if clicking on a link or button inside the card
+            if (e.target.closest('a') || e.target.closest('button')) {
+                return;
+            }
+            const productUrl = this.getAttribute('data-product-url');
+            if (productUrl) {
+                window.location.href = productUrl;
+            }
+        });
+    });
 });
 
 // Format currency helper
