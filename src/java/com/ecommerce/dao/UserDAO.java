@@ -137,7 +137,12 @@ public class UserDAO {
             ps.setString(7, user.getRole());
             ps.setBoolean(8, user.isActive());
             ps.setBoolean(9, user.isEmailVerified());
-            ps.setString(10, tokenToSave);
+            // Xử lý verification_token có thể null
+            if (tokenToSave != null && !tokenToSave.trim().isEmpty()) {
+                ps.setString(10, tokenToSave);
+            } else {
+                ps.setNull(10, java.sql.Types.VARCHAR);
+            }
             ps.setTimestamp(11, new Timestamp(System.currentTimeMillis()));
             
             int rowsAffected = ps.executeUpdate();
@@ -186,17 +191,31 @@ public class UserDAO {
     }
     
     /**
-     * Kiểm tra username đã tồn tại chưa
+     * Kiểm tra username đã tồn tại chưa (kiểm tra cả users và pending_registrations)
      */
     public boolean isUsernameExists(String username) {
-        return getUserByUsername(username) != null;
+        // Kiểm tra trong users
+        if (getUserByUsername(username) != null) {
+            return true;
+        }
+        
+        // Kiểm tra trong pending_registrations
+        PendingRegistrationDAO pendingDAO = new PendingRegistrationDAO();
+        return pendingDAO.isUsernameExists(username);
     }
     
     /**
-     * Kiểm tra email đã tồn tại chưa
+     * Kiểm tra email đã tồn tại chưa (kiểm tra cả users và pending_registrations)
      */
     public boolean isEmailExists(String email) {
-        return getUserByEmail(email) != null;
+        // Kiểm tra trong users
+        if (getUserByEmail(email) != null) {
+            return true;
+        }
+        
+        // Kiểm tra trong pending_registrations
+        PendingRegistrationDAO pendingDAO = new PendingRegistrationDAO();
+        return pendingDAO.isEmailExists(email);
     }
     
     /**

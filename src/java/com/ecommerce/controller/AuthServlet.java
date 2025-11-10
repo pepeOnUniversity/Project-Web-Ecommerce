@@ -1,5 +1,6 @@
 package com.ecommerce.controller;
 
+import com.ecommerce.dao.PendingRegistrationDAO;
 import com.ecommerce.dao.UserDAO;
 import com.ecommerce.model.User;
 import com.ecommerce.util.EmailService;
@@ -94,6 +95,12 @@ public class AuthServlet extends HttpServlet {
                 error = "Tài khoản của bạn đã bị khóa";
             } else if (!PasswordUtil.verifyPassword(password, user.getPasswordHash())) {
                 error = "Username hoặc password không đúng";
+            } else if (!user.isEmailVerified() && !user.isAdmin()) {
+                // Email chưa được xác minh, không cho phép đăng nhập
+                error = "Vui lòng xác minh email trước khi đăng nhập. Kiểm tra email để lấy link xác minh.";
+                // Lưu email vào request để hiển thị trong trang login
+                request.setAttribute("email", user.getEmail());
+                request.setAttribute("unverifiedEmail", true);
             } else {
                 // Đăng nhập thành công
                 HttpSession session = request.getSession();
@@ -159,51 +166,65 @@ public class AuthServlet extends HttpServlet {
         }
         
         if (error == null) {
-            // Tạo user mới
-            String passwordHash = PasswordUtil.hashPassword(password);
-            String verificationToken = TokenUtil.generateVerificationToken();
-            
-            User newUser = new User(username, email, passwordHash, fullName, phone, address);
-            newUser.setVerificationToken(verificationToken);
-            newUser.setEmailVerified(false);
-            
-            if (userDAO.addUser(newUser)) {
-                // Lấy user vừa tạo để lấy user_id
-                User savedUser = userDAO.getUserByUsername(username);
+            try {
+                // Tạo password hash và verification token
+                String passwordHash = PasswordUtil.hashPassword(password);
+                String verificationToken = TokenUtil.generateVerificationToken();
                 
-                // Gửi email xác minh
-                String baseUrl = request.getScheme() + "://" + request.getServerName() + 
-                                (request.getServerPort() != 80 && request.getServerPort() != 443 ? 
-                                 ":" + request.getServerPort() : "") + 
-                                request.getContextPath();
+                // Lưu thông tin đăng ký vào pending_registrations (chưa tạo user trong DB)
+                PendingRegistrationDAO pendingDAO = new PendingRegistrationDAO();
                 
-                boolean emailSent = EmailService.sendVerificationEmail(
-                    email, 
-                    username, 
-                    verificationToken, 
-                    baseUrl
-                );
-                
-                if (emailSent) {
-                    // Email đã được gửi, chuyển đến trang thông báo
-                    request.setAttribute("message", 
-                        "Đăng ký thành công! Vui lòng kiểm tra email để xác minh tài khoản.");
-                    request.setAttribute("messageType", "success");
-                    request.setAttribute("email", email);
-                    request.getRequestDispatcher("/views/auth/verify-email.jsp").forward(request, response);
-                    return;
+                if (pendingDAO.addPendingRegistration(username, email, passwordHash, fullName, phone, address, verificationToken)) {
+                    // Gửi email xác minh
+                    String baseUrl = request.getScheme() + "://" + request.getServerName() + 
+                                    (request.getServerPort() != 80 && request.getServerPort() != 443 ? 
+                                     ":" + request.getServerPort() : "") + 
+                                    request.getContextPath();
+                    
+                    boolean emailSent = false;
+                    try {
+                        emailSent = EmailService.sendVerificationEmail(
+                            email, 
+                            username, 
+                            verificationToken, 
+                            baseUrl
+                        );
+                    } catch (Exception e) {
+                        // Log lỗi nhưng không dừng quá trình đăng ký
+                        System.err.println("Lỗi khi gửi email xác minh: " + e.getMessage());
+                        e.printStackTrace();
+                        emailSent = false;
+                    }
+                    
+                    // Lưu thông báo vào session để hiển thị trên trang verify-email
+                    HttpSession session = request.getSession();
+                    
+                    if (emailSent) {
+                        // Email đã được gửi, lưu thông báo vào session và redirect
+                        session.setAttribute("verifyMessage", 
+                            "Đăng ký thành công! Vui lòng kiểm tra email để xác minh tài khoản.");
+                        session.setAttribute("verifyMessageType", "success");
+                        session.setAttribute("verifyEmail", email);
+                        response.sendRedirect(request.getContextPath() + "/verify-email");
+                        return;
+                    } else {
+                        // Email không gửi được, nhưng vẫn lưu thông tin đăng ký
+                        session.setAttribute("verifyMessage", 
+                            "Đăng ký thành công! Tuy nhiên, email xác minh chưa được gửi. " +
+                            "Vui lòng liên hệ hỗ trợ hoặc thử lại sau.");
+                        session.setAttribute("verifyMessageType", "warning");
+                        session.setAttribute("verifyEmail", email);
+                        response.sendRedirect(request.getContextPath() + "/verify-email");
+                        return;
+                    }
                 } else {
-                    // Email không gửi được, nhưng vẫn cho phép đăng nhập (có thể resend sau)
-                    request.setAttribute("message", 
-                        "Đăng ký thành công! Tuy nhiên, email xác minh chưa được gửi. " +
-                        "Vui lòng liên hệ hỗ trợ hoặc thử lại sau.");
-                    request.setAttribute("messageType", "warning");
-                    request.setAttribute("email", email);
-                    request.getRequestDispatcher("/views/auth/verify-email.jsp").forward(request, response);
-                    return;
+                    error = "Có lỗi xảy ra khi đăng ký. Vui lòng thử lại.";
                 }
-            } else {
-                error = "Có lỗi xảy ra khi đăng ký. Vui lòng thử lại.";
+            } catch (Exception e) {
+                // Bắt tất cả các exception và log ra
+                System.err.println("Lỗi khi đăng ký user: " + e.getMessage());
+                e.printStackTrace();
+                error = "Có lỗi xảy ra khi đăng ký: " + e.getMessage() + ". Vui lòng thử lại.";
             }
         }
         

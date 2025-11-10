@@ -1,5 +1,6 @@
 package com.ecommerce.controller;
 
+import com.ecommerce.dao.PendingRegistrationDAO;
 import com.ecommerce.dao.UserDAO;
 import com.ecommerce.model.User;
 import jakarta.servlet.ServletException;
@@ -18,10 +19,12 @@ import java.io.IOException;
 public class EmailVerificationServlet extends HttpServlet {
     
     private UserDAO userDAO;
+    private PendingRegistrationDAO pendingDAO;
     
     @Override
     public void init() throws ServletException {
         userDAO = new UserDAO();
+        pendingDAO = new PendingRegistrationDAO();
     }
     
     @Override
@@ -121,59 +124,70 @@ public class EmailVerificationServlet extends HttpServlet {
             }
             
             // Có token, xử lý xác minh email
-            System.out.println("Đang tìm user với token: " + token);
-            User user = userDAO.getUserByVerificationToken(token);
+            System.out.println("Đang tìm pending registration với token: " + token);
+            PendingRegistrationDAO.PendingRegistration pendingReg = pendingDAO.getByToken(token);
             
-            if (user == null) {
+            if (pendingReg == null) {
                 // Token không hợp lệ hoặc đã hết hạn
-                System.out.println("KHÔNG TÌM THẤY user với token này!");
+                System.out.println("KHÔNG TÌM THẤY pending registration với token này!");
                 System.out.println("Token length: " + (token != null ? token.length() : 0));
                 
-                request.setAttribute("message", "Link xác minh không hợp lệ hoặc đã hết hạn. Vui lòng đăng ký lại hoặc liên hệ hỗ trợ.");
-                request.setAttribute("messageType", "error");
-                request.getRequestDispatcher("/views/auth/verify-email.jsp").forward(request, response);
-                return;
-            }
-            
-            System.out.println("Tìm thấy user: " + user.getUsername() + " (ID: " + user.getUserId() + ")");
-            System.out.println("User email verified: " + user.isEmailVerified());
-            
-            if (user.isEmailVerified()) {
-                // Email đã được xác minh rồi
-                request.setAttribute("message", "Email của bạn đã được xác minh rồi. Bạn có thể đăng nhập ngay.");
-                request.setAttribute("messageType", "success");
-                request.getRequestDispatcher("/views/auth/verify-email.jsp").forward(request, response);
-                return;
-            }
-            
-            // Xác minh email
-            boolean verified = userDAO.verifyEmail(token);
-            
-            if (verified) {
-                // Xác minh thành công
-                // Cập nhật user trong session nếu đang đăng nhập
-                HttpSession session = request.getSession(false);
-                if (session != null) {
-                    User sessionUser = (User) session.getAttribute("user");
-                    if (sessionUser != null && sessionUser.getUserId() == user.getUserId()) {
-                        user.setEmailVerified(true);
-                        session.setAttribute("user", user);
-                        
-                        // Redirect đến URL được lưu hoặc về home
-                        String redirectUrl = (String) session.getAttribute("redirectAfterVerify");
-                        if (redirectUrl != null && !redirectUrl.isEmpty()) {
-                            session.removeAttribute("redirectAfterVerify");
-                            response.sendRedirect(request.getContextPath() + redirectUrl);
-                            return;
+                // Kiểm tra xem có phải user đã được tạo rồi không (trường hợp đã xác minh trước đó)
+                User existingUser = userDAO.getUserByVerificationToken(token);
+                if (existingUser != null) {
+                    // User đã tồn tại, có thể đã xác minh rồi
+                    if (existingUser.isEmailVerified()) {
+                        request.setAttribute("message", "Email của bạn đã được xác minh rồi. Bạn có thể đăng nhập ngay.");
+                        request.setAttribute("messageType", "success");
+                    } else {
+                        // User tồn tại nhưng chưa xác minh (trường hợp cũ)
+                        boolean verified = userDAO.verifyEmail(token);
+                        if (verified) {
+                            request.setAttribute("message", "Email đã được xác minh thành công! Bạn có thể đăng nhập ngay.");
+                            request.setAttribute("messageType", "success");
+                        } else {
+                            request.setAttribute("message", "Link xác minh không hợp lệ hoặc đã hết hạn. Vui lòng đăng ký lại hoặc liên hệ hỗ trợ.");
+                            request.setAttribute("messageType", "error");
                         }
                     }
+                } else {
+                    request.setAttribute("message", "Link xác minh không hợp lệ hoặc đã hết hạn. Vui lòng đăng ký lại hoặc liên hệ hỗ trợ.");
+                    request.setAttribute("messageType", "error");
                 }
                 
-                request.setAttribute("message", "Email đã được xác minh thành công! Bạn có thể đăng nhập ngay.");
+                request.getRequestDispatcher("/views/auth/verify-email.jsp").forward(request, response);
+                return;
+            }
+            
+            System.out.println("Tìm thấy pending registration: " + pendingReg.getUsername() + " (Email: " + pendingReg.getEmail() + ")");
+            
+            // Tạo user mới trong users table từ pending registration
+            User newUser = new User(
+                pendingReg.getUsername(),
+                pendingReg.getEmail(),
+                pendingReg.getPasswordHash(),
+                pendingReg.getFullName(),
+                pendingReg.getPhone(),
+                pendingReg.getAddress()
+            );
+            newUser.setEmailVerified(true); // Đã xác minh email
+            newUser.setVerificationToken(null); // Xóa token sau khi xác minh
+            
+            // Tạo user trong database
+            boolean userCreated = userDAO.addUser(newUser);
+            
+            if (userCreated) {
+                // Xóa pending registration sau khi đã tạo user thành công
+                pendingDAO.deleteByToken(token);
+                
+                System.out.println("User đã được tạo thành công: " + newUser.getUsername());
+                
+                request.setAttribute("message", "Email đã được xác minh thành công! Tài khoản của bạn đã được tạo. Bạn có thể đăng nhập ngay.");
                 request.setAttribute("messageType", "success");
             } else {
-                // Xác minh thất bại
-                request.setAttribute("message", "Có lỗi xảy ra khi xác minh email. Vui lòng thử lại sau.");
+                // Lỗi khi tạo user
+                System.err.println("Lỗi khi tạo user từ pending registration");
+                request.setAttribute("message", "Có lỗi xảy ra khi tạo tài khoản. Vui lòng thử lại sau hoặc liên hệ hỗ trợ.");
                 request.setAttribute("messageType", "error");
             }
             
