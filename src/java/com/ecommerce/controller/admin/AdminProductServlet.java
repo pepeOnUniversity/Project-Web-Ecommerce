@@ -10,6 +10,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -55,9 +56,74 @@ public class AdminProductServlet extends HttpServlet {
             throws ServletException, IOException {
         
         try {
-            // Admin cần thấy tất cả products (kể cả inactive)
-            request.setAttribute("products", productDAO.getAllProductsForAdmin());
+            // Lấy các filter parameters
+            String categoryIdParam = request.getParameter("categoryId");
+            String status = request.getParameter("status");
+            String featured = request.getParameter("featured");
+            String searchKeyword = request.getParameter("search");
+            String minPriceParam = request.getParameter("minPrice");
+            String maxPriceParam = request.getParameter("maxPrice");
+            String lowStockParam = request.getParameter("lowStock");
+            
+            // Parse parameters
+            Integer categoryId = null;
+            if (categoryIdParam != null && !categoryIdParam.trim().isEmpty()) {
+                try {
+                    categoryId = Integer.parseInt(categoryIdParam);
+                } catch (NumberFormatException e) {
+                    LOGGER.log(Level.WARNING, "Invalid categoryId parameter: " + categoryIdParam);
+                }
+            }
+            
+            BigDecimal minPrice = null;
+            if (minPriceParam != null && !minPriceParam.trim().isEmpty()) {
+                try {
+                    minPrice = new BigDecimal(minPriceParam);
+                } catch (NumberFormatException e) {
+                    LOGGER.log(Level.WARNING, "Invalid minPrice parameter: " + minPriceParam);
+                }
+            }
+            
+            BigDecimal maxPrice = null;
+            if (maxPriceParam != null && !maxPriceParam.trim().isEmpty()) {
+                try {
+                    maxPrice = new BigDecimal(maxPriceParam);
+                } catch (NumberFormatException e) {
+                    LOGGER.log(Level.WARNING, "Invalid maxPrice parameter: " + maxPriceParam);
+                }
+            }
+            
+            Boolean lowStock = null;
+            if (lowStockParam != null && "true".equals(lowStockParam)) {
+                lowStock = true;
+            }
+            
+            // Kiểm tra xem có filter nào được áp dụng không
+            boolean hasFilters = categoryId != null || status != null || featured != null
+                    || (searchKeyword != null && !searchKeyword.trim().isEmpty())
+                    || minPrice != null || maxPrice != null || lowStock != null;
+            
+            // Lấy danh sách products
+            List<Product> products;
+            if (hasFilters) {
+                products = productDAO.filterProductsForAdmin(categoryId, status, featured, 
+                        searchKeyword, minPrice, maxPrice, lowStock);
+            } else {
+                products = productDAO.getAllProductsForAdmin();
+            }
+            
+            // Set attributes
+            request.setAttribute("products", products);
             request.setAttribute("categories", categoryDAO.getAllCategories());
+            
+            // Set filter values để giữ lại trong form
+            request.setAttribute("filterCategoryId", categoryId);
+            request.setAttribute("filterStatus", status);
+            request.setAttribute("filterFeatured", featured);
+            request.setAttribute("filterSearch", searchKeyword);
+            request.setAttribute("filterMinPrice", minPriceParam);
+            request.setAttribute("filterMaxPrice", maxPriceParam);
+            request.setAttribute("filterLowStock", lowStockParam);
             
             request.getRequestDispatcher("/views/admin/manage-products.jsp").forward(request, response);
             

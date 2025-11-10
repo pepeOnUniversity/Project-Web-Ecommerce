@@ -3,6 +3,7 @@ package com.ecommerce.dao;
 import com.ecommerce.model.Product;
 import com.ecommerce.util.DBConnection;
 import com.ecommerce.util.SlugUtil;
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -81,6 +82,97 @@ public class ProductDAO {
             }
         } catch (SQLException e) {
             LOGGER.log(Level.SEVERE, "Error getting all products for admin", e);
+        }
+        
+        return products;
+    }
+    
+    /**
+     * Lọc products với các điều kiện - dùng cho admin
+     * @param categoryId Filter theo category (null = tất cả)
+     * @param status Filter theo trạng thái ("active", "inactive", null = tất cả)
+     * @param featured Filter theo featured ("yes", "no", null = tất cả)
+     * @param searchKeyword Tìm kiếm theo tên sản phẩm (null = không tìm)
+     * @param minPrice Giá tối thiểu (null = không giới hạn)
+     * @param maxPrice Giá tối đa (null = không giới hạn)
+     * @param lowStock Chỉ lấy sản phẩm tồn kho thấp (< 10) (true/false/null)
+     * @return Danh sách products đã lọc
+     */
+    public List<Product> filterProductsForAdmin(Integer categoryId, String status, 
+            String featured, String searchKeyword, BigDecimal minPrice, 
+            BigDecimal maxPrice, Boolean lowStock) {
+        List<Product> products = new ArrayList<>();
+        
+        // Xây dựng SQL query động
+        StringBuilder sql = new StringBuilder("SELECT * FROM products WHERE 1=1");
+        List<Object> params = new ArrayList<>();
+        
+        // Filter theo category
+        if (categoryId != null && categoryId > 0) {
+            sql.append(" AND category_id = ?");
+            params.add(categoryId);
+        }
+        
+        // Filter theo trạng thái
+        if ("active".equals(status)) {
+            sql.append(" AND is_active = 1");
+        } else if ("inactive".equals(status)) {
+            sql.append(" AND is_active = 0");
+        }
+        
+        // Filter theo featured
+        if ("yes".equals(featured)) {
+            sql.append(" AND is_featured = 1");
+        } else if ("no".equals(featured)) {
+            sql.append(" AND is_featured = 0");
+        }
+        
+        // Tìm kiếm theo tên sản phẩm
+        if (searchKeyword != null && !searchKeyword.trim().isEmpty()) {
+            sql.append(" AND product_name LIKE ?");
+            String searchPattern = "%" + searchKeyword.trim() + "%";
+            params.add(searchPattern);
+        }
+        
+        // Filter theo giá
+        if (minPrice != null) {
+            sql.append(" AND price >= ?");
+            params.add(minPrice);
+        }
+        if (maxPrice != null) {
+            sql.append(" AND price <= ?");
+            params.add(maxPrice);
+        }
+        
+        // Filter theo tồn kho thấp
+        if (lowStock != null && lowStock) {
+            sql.append(" AND stock_quantity < 10");
+        }
+        
+        sql.append(" ORDER BY product_id DESC");
+        
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+            
+            // Set parameters
+            for (int i = 0; i < params.size(); i++) {
+                Object param = params.get(i);
+                if (param instanceof Integer) {
+                    ps.setInt(i + 1, (Integer) param);
+                } else if (param instanceof BigDecimal) {
+                    ps.setBigDecimal(i + 1, (BigDecimal) param);
+                } else if (param instanceof String) {
+                    ps.setString(i + 1, (String) param);
+                }
+            }
+            
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    products.add(mapResultSetToProduct(rs));
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error filtering products for admin", e);
         }
         
         return products;

@@ -69,6 +69,101 @@
         </div>
     </div>
     
+    <!-- Filter Section -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0">
+                <i class="fas fa-filter me-2"></i>Bộ lọc sản phẩm
+                <button class="btn btn-sm btn-outline-secondary float-end" onclick="clearFilters()">
+                    <i class="fas fa-times me-1"></i>Xóa bộ lọc
+                </button>
+            </h5>
+        </div>
+        <div class="card-body">
+            <form id="filterForm" method="GET" action="${pageContext.request.contextPath}/admin/products">
+                <div class="row g-3">
+                    <!-- Search -->
+                    <div class="col-md-3">
+                        <label for="search" class="form-label">Tìm kiếm</label>
+                        <input type="text" class="form-control" id="search" name="search" 
+                               placeholder="Tên sản phẩm..." value="${filterSearch}">
+                    </div>
+                    
+                    <!-- Category -->
+                    <div class="col-md-2">
+                        <label for="categoryId" class="form-label">Danh mục</label>
+                        <select class="form-select" id="categoryId" name="categoryId">
+                            <option value="">Tất cả</option>
+                            <c:forEach var="category" items="${categories}">
+                                <option value="${category.categoryId}" ${filterCategoryId == category.categoryId ? 'selected' : ''}>
+                                    ${category.categoryName}
+                                </option>
+                            </c:forEach>
+                        </select>
+                    </div>
+                    
+                    <!-- Status -->
+                    <div class="col-md-2">
+                        <label for="status" class="form-label">Trạng thái</label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="">Tất cả</option>
+                            <option value="active" ${filterStatus == 'active' ? 'selected' : ''}>Hoạt động</option>
+                            <option value="inactive" ${filterStatus == 'inactive' ? 'selected' : ''}>Ngừng bán</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Featured -->
+                    <div class="col-md-2">
+                        <label for="featured" class="form-label">Nổi bật</label>
+                        <select class="form-select" id="featured" name="featured">
+                            <option value="">Tất cả</option>
+                            <option value="yes" ${filterFeatured == 'yes' ? 'selected' : ''}>Có</option>
+                            <option value="no" ${filterFeatured == 'no' ? 'selected' : ''}>Không</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Low Stock -->
+                    <div class="col-md-3">
+                        <label class="form-label">&nbsp;</label>
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" id="lowStock" name="lowStock" 
+                                   value="true" ${filterLowStock == 'true' ? 'checked' : ''}>
+                            <label class="form-check-label" for="lowStock">
+                                Tồn kho thấp (< 10)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row g-3 mt-2">
+                    <!-- Min Price -->
+                    <div class="col-md-3">
+                        <label for="minPrice" class="form-label">Giá tối thiểu (₫)</label>
+                        <input type="number" class="form-control" id="minPrice" name="minPrice" 
+                               placeholder="0" min="0" step="1000" value="${filterMinPrice}">
+                    </div>
+                    
+                    <!-- Max Price -->
+                    <div class="col-md-3">
+                        <label for="maxPrice" class="form-label">Giá tối đa (₫)</label>
+                        <input type="number" class="form-control" id="maxPrice" name="maxPrice" 
+                               placeholder="Không giới hạn" min="0" step="1000" value="${filterMaxPrice}">
+                    </div>
+                    
+                    <!-- Filter Button -->
+                    <div class="col-md-6 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="fas fa-search me-2"></i>Lọc
+                        </button>
+                        <c:if test="${param.showDeleted == 'true'}">
+                            <input type="hidden" name="showDeleted" value="true">
+                        </c:if>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
     <div class="card shadow-sm">
         <div class="card-body">
             <div class="table-responsive">
@@ -422,6 +517,23 @@ function toggleDeletedProducts() {
         url.searchParams.set('showDeleted', 'true');
     } else {
         url.searchParams.delete('showDeleted');
+    }
+    window.location.href = url.toString();
+}
+
+// Xóa tất cả filters
+function clearFilters() {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('categoryId');
+    url.searchParams.delete('status');
+    url.searchParams.delete('featured');
+    url.searchParams.delete('search');
+    url.searchParams.delete('minPrice');
+    url.searchParams.delete('maxPrice');
+    url.searchParams.delete('lowStock');
+    // Giữ lại showDeleted nếu đang bật
+    if (document.getElementById('showDeleted').checked) {
+        url.searchParams.set('showDeleted', 'true');
     }
     window.location.href = url.toString();
 }

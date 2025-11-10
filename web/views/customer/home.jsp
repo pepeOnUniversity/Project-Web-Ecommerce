@@ -59,7 +59,19 @@
             <div class="col-md-3 col-sm-6" data-aos="fade-up" data-aos-delay="${status.index * 100}">
                 <div class="card category-card h-100 shadow-sm">
                     <div class="card-body text-center">
-                        <i class="fas fa-box fa-3x text-primary mb-3"></i>
+                        <c:choose>
+                            <c:when test="${not empty category.imageUrl}">
+                                <div class="category-image-wrapper mb-3" style="width: 100%; height: 200px; display: flex; align-items: center; justify-content: center; border-radius: 8px; overflow: hidden;">
+                                    <img src="${category.imageUrl}" 
+                                         alt="${category.categoryName}" 
+                                         class="category-image"
+                                         style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; border-radius: 8px;">
+                                </div>
+                            </c:when>
+                            <c:otherwise>
+                                <i class="fas fa-box fa-3x text-primary mb-3"></i>
+                            </c:otherwise>
+                        </c:choose>
                         <h5 class="card-title">${category.categoryName}</h5>
                         <a href="${pageContext.request.contextPath}/products?category=${category.categoryId}" 
                            class="btn btn-outline-primary btn-sm">Xem sản phẩm</a>
@@ -85,7 +97,13 @@
                                 -${product.discountPercentage}%
                             </span>
                         </c:if>
-                        <img src="${product.imageUrl}" class="card-img-top" alt="${product.productName}">
+                        <div class="product-image-wrapper" style="width: 100%; height: 200px; display: flex; align-items: center; justify-content: center; border-radius: 8px 8px 0 0; overflow: hidden;">
+                            <img src="${product.displayImageUrl}" 
+                                 class="card-img-top" 
+                                 alt="${product.productName}"
+                                 style="max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain;"
+                                 onerror="if(this.src.indexOf('data:image') === -1) this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\'%3E%3Crect fill=\'%23ddd\' width=\'200\' height=\'200\'/%3E%3Ctext fill=\'%23999\' font-family=\'sans-serif\' font-size=\'14\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\'%3ENo Image%3C/text%3E%3C/svg%3E'">
+                        </div>
                     </a>
                     <div class="card-body d-flex flex-column">
                         <h6 class="card-title">
