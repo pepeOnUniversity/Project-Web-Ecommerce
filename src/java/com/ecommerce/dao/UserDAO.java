@@ -191,6 +191,29 @@ public class UserDAO {
     }
     
     /**
+     * Cập nhật password cho user
+     * @param userId ID của user
+     * @param passwordHash Password hash mới (đã được hash bằng PasswordUtil)
+     * @return true nếu cập nhật thành công
+     */
+    public boolean updatePassword(int userId, String passwordHash) {
+        String sql = "UPDATE users SET password_hash = ? WHERE user_id = ?";
+        
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setString(1, passwordHash);
+            ps.setInt(2, userId);
+            
+            int rowsAffected = ps.executeUpdate();
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error updating password for user: " + userId, e);
+            return false;
+        }
+    }
+    
+    /**
      * Kiểm tra username đã tồn tại chưa (kiểm tra cả users và pending_registrations)
      */
     public boolean isUsernameExists(String username) {

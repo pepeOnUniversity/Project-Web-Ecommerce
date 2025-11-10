@@ -49,6 +49,14 @@ public class AuthServlet extends HttpServlet {
         }
         
         if ("/login".equals(path)) {
+            // Kiểm tra thông báo reset password thành công
+            if (session != null) {
+                String resetPasswordSuccess = (String) session.getAttribute("resetPasswordSuccess");
+                if (resetPasswordSuccess != null) {
+                    request.setAttribute("success", resetPasswordSuccess);
+                    session.removeAttribute("resetPasswordSuccess");
+                }
+            }
             request.getRequestDispatcher("/views/auth/login.jsp").forward(request, response);
         } else if ("/register".equals(path)) {
             request.getRequestDispatcher("/views/auth/register.jsp").forward(request, response);

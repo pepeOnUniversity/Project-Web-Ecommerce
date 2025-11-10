@@ -247,6 +247,61 @@ public class EmailService {
     }
     
     /**
+     * Gửi email reset password
+     * @param toEmail Email người nhận
+     * @param username Tên người dùng
+     * @param resetToken Token reset password
+     * @param baseUrl URL gốc của website (để tạo link reset)
+     * @return true nếu gửi thành công, false nếu có lỗi
+     */
+    public static boolean sendPasswordResetEmail(String toEmail, String username, String resetToken, String baseUrl) {
+        LOGGER.log(Level.INFO, "Bắt đầu gửi email reset password đến: " + toEmail);
+        
+        // Lấy cấu hình động mỗi lần gửi email
+        String smtpHost = getConfig("smtp.host", "smtp.gmail.com");
+        String smtpPort = getConfig("smtp.port", "587");
+        String smtpUser = getConfig("smtp.user", "");
+        String smtpPassword = getConfig("smtp.password", "");
+        String fromEmail = getConfig("email.from", smtpUser);
+        String fromName = getConfig("email.from.name", "Ecommerce App");
+        
+        // Log cấu hình (ẩn password)
+        LOGGER.log(Level.INFO, "SMTP Config - Host: " + smtpHost + ", Port: " + smtpPort + ", User: " + smtpUser);
+        LOGGER.log(Level.INFO, "SMTP Config - From: " + fromEmail + ", FromName: " + fromName);
+        
+        if (smtpUser == null || smtpUser.isEmpty() || smtpPassword == null || smtpPassword.isEmpty()) {
+            LOGGER.log(Level.SEVERE, "SMTP credentials chưa được cấu hình. smtpUser: '" + smtpUser + "', smtpPassword: '" + 
+                      (smtpPassword != null && !smtpPassword.isEmpty() ? "***" : "null/empty") + "'");
+            return false;
+        }
+        
+        try {
+            // Tạo link reset password
+            String resetLink = baseUrl + "/reset-password?token=" + resetToken;
+            LOGGER.log(Level.INFO, "Reset token: " + resetToken);
+            LOGGER.log(Level.INFO, "Reset link: " + resetLink);
+            
+            // Nội dung email
+            String subject = "Đặt lại mật khẩu";
+            String htmlContent = buildPasswordResetEmailHtml(username, resetLink);
+            
+            // Gửi email
+            boolean result = sendEmail(toEmail, subject, htmlContent, smtpHost, smtpPort, smtpUser, smtpPassword, fromEmail, fromName);
+            if (result) {
+                LOGGER.log(Level.INFO, "Email reset password đã được gửi thành công đến: " + toEmail);
+            } else {
+                LOGGER.log(Level.SEVERE, "Email reset password KHÔNG được gửi đến: " + toEmail);
+            }
+            return result;
+            
+        } catch (Exception e) {
+            LOGGER.log(Level.SEVERE, "Lỗi khi gửi email reset password đến " + toEmail, e);
+            e.printStackTrace(); // In stack trace để debug
+            return false;
+        }
+    }
+    
+    /**
      * Tạo HTML content cho email xác minh
      */
     private static String buildVerificationEmailHtml(String username, String verificationLink) {
@@ -280,6 +335,56 @@ public class EmailService {
                "<p style='word-break: break-all; color: #007bff;'>" + verificationLink + "</p>" +
                "<p><strong>Lưu ý:</strong> Link này sẽ hết hạn sau 24 giờ.</p>" +
                "<p>Nếu bạn không đăng ký tài khoản này, vui lòng bỏ qua email này.</p>" +
+               "</div>" +
+               "<div class='footer'>" +
+               "<p>© 2024 Ecommerce Store. All rights reserved.</p>" +
+               "</div>" +
+               "</div>" +
+               "</body>" +
+               "</html>";
+    }
+    
+    /**
+     * Tạo HTML content cho email reset password
+     */
+    private static String buildPasswordResetEmailHtml(String username, String resetLink) {
+        return "<!DOCTYPE html>" +
+               "<html>" +
+               "<head>" +
+               "<meta charset='UTF-8'>" +
+               "<style>" +
+               "body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }" +
+               ".container { max-width: 600px; margin: 0 auto; padding: 20px; }" +
+               ".header { background-color: #dc3545; color: white; padding: 20px; text-align: center; }" +
+               ".content { background-color: #f8f9fa; padding: 30px; }" +
+               ".button { display: inline-block; padding: 12px 30px; background-color: #dc3545; " +
+               "color: white; text-decoration: none; border-radius: 5px; margin: 20px 0; }" +
+               ".footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }" +
+               ".warning { background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }" +
+               "</style>" +
+               "</head>" +
+               "<body>" +
+               "<div class='container'>" +
+               "<div class='header'>" +
+               "<h1>Đặt lại Mật khẩu</h1>" +
+               "</div>" +
+               "<div class='content'>" +
+               "<p>Xin chào <strong>" + escapeHtml(username) + "</strong>,</p>" +
+               "<p>Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.</p>" +
+               "<p>Vui lòng click vào nút bên dưới để đặt lại mật khẩu:</p>" +
+               "<div style='text-align: center;'>" +
+               "<a href='" + resetLink + "' class='button'>Đặt lại Mật khẩu</a>" +
+               "</div>" +
+               "<p>Hoặc copy và paste link sau vào trình duyệt:</p>" +
+               "<p style='word-break: break-all; color: #dc3545;'>" + resetLink + "</p>" +
+               "<div class='warning'>" +
+               "<p><strong>Lưu ý quan trọng:</strong></p>" +
+               "<ul>" +
+               "<li>Link này sẽ hết hạn sau 1 giờ.</li>" +
+               "<li>Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng bỏ qua email này.</li>" +
+               "<li>Để bảo mật tài khoản, không chia sẻ link này với bất kỳ ai.</li>" +
+               "</ul>" +
+               "</div>" +
                "</div>" +
                "<div class='footer'>" +
                "<p>© 2024 Ecommerce Store. All rights reserved.</p>" +

@@ -16,7 +16,15 @@
                 </div>
                 <div class="card-body p-4">
                     <c:if test="${error != null}">
-                        <div class="alert alert-danger">${error}</div>
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-circle me-2"></i>${error}
+                        </div>
+                    </c:if>
+                    
+                    <c:if test="${success != null}">
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle me-2"></i>${success}
+                        </div>
                     </c:if>
                     
                     <form method="post" action="${pageContext.request.contextPath}/login">
@@ -36,6 +44,12 @@
                             <label class="form-check-label" for="rememberMe">
                                 Ghi nhớ đăng nhập
                             </label>
+                        </div>
+                        
+                        <div class="mb-3 text-end">
+                            <a href="${pageContext.request.contextPath}/forgot-password" class="text-decoration-none">
+                                <i class="fas fa-question-circle me-1"></i>Quên mật khẩu?
+                            </a>
                         </div>
                         
                         <button type="submit" class="btn btn-primary w-100 mb-3">
