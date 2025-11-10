@@ -22,6 +22,7 @@
         <url-pattern>/checkout</url-pattern>
         <url-pattern>/orders</url-pattern>
         <url-pattern>/change-password</url-pattern>
+        <url-pattern>/profile</url-pattern>
     </filter-mapping>
     
     <filter>

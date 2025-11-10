@@ -71,10 +71,10 @@
                                 <i class="fas fa-user me-1"></i>${currentUser.fullName}
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="${pageContext.request.contextPath}/profile">
+                                    <i class="fas fa-user-circle me-2"></i>Hồ sơ của tôi</a></li>
                                 <li><a class="dropdown-item" href="${pageContext.request.contextPath}/orders">
                                     <i class="fas fa-list me-2"></i>Đơn hàng của tôi</a></li>
-                                <li><a class="dropdown-item" href="${pageContext.request.contextPath}/change-password">
-                                    <i class="fas fa-key me-2"></i>Đổi mật khẩu</a></li>
                                 <c:if test="${currentUser.admin}">
                                     <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item" href="${pageContext.request.contextPath}/admin">
