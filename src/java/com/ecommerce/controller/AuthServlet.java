@@ -201,20 +201,40 @@ public class AuthServlet extends HttpServlet {
                     
                     if (emailSent) {
                         // Email đã được gửi, lưu thông báo vào session và redirect
-                        session.setAttribute("verifyMessage", 
-                            "Đăng ký thành công! Vui lòng kiểm tra email để xác minh tài khoản.");
+                        // Đảm bảo session tồn tại và không bị timeout
+                        if (session == null) {
+                            session = request.getSession(true);
+                        }
+                        // Set session timeout dài hơn (1 giờ) để đảm bảo thông báo không bị mất
+                        session.setMaxInactiveInterval(60 * 60); // 1 giờ
+                        
+                        String successMessage = "Đăng ký thành công! Vui lòng kiểm tra email để xác minh tài khoản.";
+                        session.setAttribute("verifyMessage", successMessage);
                         session.setAttribute("verifyMessageType", "success");
                         session.setAttribute("verifyEmail", email);
-                        response.sendRedirect(request.getContextPath() + "/verify-email");
+                        
+                        // Redirect với email parameter để đảm bảo nếu session mất, vẫn có thể lấy email
+                        response.sendRedirect(request.getContextPath() + "/verify-email?email=" + 
+                                            java.net.URLEncoder.encode(email, "UTF-8"));
                         return;
                     } else {
                         // Email không gửi được, nhưng vẫn lưu thông tin đăng ký
-                        session.setAttribute("verifyMessage", 
-                            "Đăng ký thành công! Tuy nhiên, email xác minh chưa được gửi. " +
-                            "Vui lòng liên hệ hỗ trợ hoặc thử lại sau.");
+                        // Đảm bảo session tồn tại và không bị timeout
+                        if (session == null) {
+                            session = request.getSession(true);
+                        }
+                        // Set session timeout dài hơn (1 giờ) để đảm bảo thông báo không bị mất
+                        session.setMaxInactiveInterval(60 * 60); // 1 giờ
+                        
+                        String warningMessage = "Đăng ký thành công! Tuy nhiên, email xác minh chưa được gửi. " +
+                            "Vui lòng liên hệ hỗ trợ hoặc thử lại sau.";
+                        session.setAttribute("verifyMessage", warningMessage);
                         session.setAttribute("verifyMessageType", "warning");
                         session.setAttribute("verifyEmail", email);
-                        response.sendRedirect(request.getContextPath() + "/verify-email");
+                        
+                        // Redirect với email parameter để đảm bảo nếu session mất, vẫn có thể lấy email
+                        response.sendRedirect(request.getContextPath() + "/verify-email?email=" + 
+                                            java.net.URLEncoder.encode(email, "UTF-8"));
                         return;
                     }
                 } else {

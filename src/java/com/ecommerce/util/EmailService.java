@@ -1,5 +1,6 @@
 package com.ecommerce.util;
 
+import java.io.InputStream;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -15,15 +16,46 @@ public class EmailService {
     
     private static final Logger LOGGER = Logger.getLogger(EmailService.class.getName());
     
-    // Lấy cấu hình SMTP từ System Properties hoặc Environment Variables
+    // Cache cho config properties từ file
+    private static Properties configProperties = null;
+    private static boolean configLoaded = false;
+    
+    /**
+     * Load cấu hình từ file config.properties
+     * File này nên được đặt trong thư mục src/java/resources hoặc WEB-INF/classes
+     */
+    private static synchronized void loadConfigProperties() {
+        if (configLoaded) {
+            return; // Đã load rồi, không load lại
+        }
+        
+        configProperties = new Properties();
+        try {
+            // Thử load từ classpath (src/java/resources/config.properties hoặc WEB-INF/classes/config.properties)
+            InputStream inputStream = EmailService.class.getClassLoader().getResourceAsStream("config.properties");
+            if (inputStream != null) {
+                configProperties.load(inputStream);
+                inputStream.close();
+                LOGGER.log(Level.INFO, "Đã load cấu hình từ file config.properties");
+            } else {
+                LOGGER.log(Level.FINE, "Không tìm thấy file config.properties trong classpath");
+            }
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Không thể load file config.properties: " + e.getMessage());
+        }
+        
+        configLoaded = true;
+    }
+    
+    // Lấy cấu hình SMTP từ System Properties, Environment Variables, hoặc file config.properties
     private static String getConfig(String name, String defaultValue) {
-        // Thử lấy từ System Properties trước
+        // 1. Thử lấy từ System Properties trước (ưu tiên cao nhất)
         String value = System.getProperty(name);
         if (value != null && !value.isEmpty()) {
             return value;
         }
         
-        // Fallback: lấy từ Environment Variables (thử cả dấu chấm và dấu gạch dưới)
+        // 2. Fallback: lấy từ Environment Variables (thử cả dấu chấm và dấu gạch dưới)
         value = System.getenv(name);
         if (value == null || value.isEmpty()) {
             // Thử với tên biến không có dấu chấm (Windows không hỗ trợ dấu chấm trong env vars)
@@ -32,6 +64,16 @@ public class EmailService {
         }
         if (value != null && !value.isEmpty()) {
             return value;
+        }
+        
+        // 3. Fallback: lấy từ file config.properties
+        loadConfigProperties();
+        if (configProperties != null) {
+            value = configProperties.getProperty(name);
+            if (value != null && !value.isEmpty()) {
+                LOGGER.log(Level.FINE, "Đã lấy cấu hình '" + name + "' từ file config.properties");
+                return value;
+            }
         }
         
         // Default values cho development/testing
@@ -156,9 +198,17 @@ public class EmailService {
             
             // Tạo message
             Message message = new MimeMessage(session);
-            message.setFrom(new InternetAddress(fromEmail, fromName));
+            // Encode fromName với UTF-8
+            message.setFrom(new InternetAddress(fromEmail, fromName, "UTF-8"));
             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail));
-            message.setSubject(subject);
+            // Encode subject với UTF-8 để hỗ trợ tiếng Việt
+            try {
+                message.setSubject(MimeUtility.encodeText(subject, "UTF-8", "B"));
+            } catch (java.io.UnsupportedEncodingException e) {
+                // Fallback: set subject trực tiếp nếu encode thất bại
+                LOGGER.log(Level.WARNING, "Không thể encode subject với UTF-8, sử dụng subject gốc: " + e.getMessage());
+                message.setSubject(subject);
+            }
             message.setContent(htmlContent, "text/html; charset=UTF-8");
             
             LOGGER.log(Level.INFO, "Đang gửi email qua Transport...");

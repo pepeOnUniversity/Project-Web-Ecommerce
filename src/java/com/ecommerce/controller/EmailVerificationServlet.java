@@ -81,10 +81,11 @@ public class EmailVerificationServlet extends HttpServlet {
                 HttpSession session = request.getSession(false);
                 
                 // Luôn khởi tạo các attributes với giá trị mặc định
-                String message = "Vui lòng kiểm tra email để lấy link xác minh.";
+                String message = null;
                 String messageType = "info";
                 String email = null;
                 
+                // Bước 1: Lấy từ session trước
                 if (session != null) {
                     String verifyMessage = (String) session.getAttribute("verifyMessage");
                     String verifyMessageType = (String) session.getAttribute("verifyMessageType");
@@ -95,15 +96,58 @@ public class EmailVerificationServlet extends HttpServlet {
                         message = verifyMessage;
                         messageType = (verifyMessageType != null && !verifyMessageType.trim().isEmpty()) 
                                     ? verifyMessageType : "info";
-                        // Xóa thông báo khỏi session sau khi đã lấy
-                        session.removeAttribute("verifyMessage");
-                        session.removeAttribute("verifyMessageType");
+                        // KHÔNG xóa thông báo khỏi session ngay - giữ lại để hiển thị khi refresh
+                        // Chỉ xóa khi user đã xác minh email thành công (xem phần xử lý token)
                     }
                     
                     // Lấy email từ session nếu có
                     if (verifyEmail != null && !verifyEmail.trim().isEmpty()) {
                         email = verifyEmail;
                     }
+                }
+                
+                // Bước 2: Nếu có email trong session nhưng không có message, tạo lại message
+                if (email != null && (message == null || message.trim().isEmpty())) {
+                    // Có email nhưng không có message, tạo lại message từ email
+                    message = "Đăng ký thành công! Vui lòng kiểm tra email để xác minh tài khoản.";
+                    messageType = "success";
+                    
+                    // Lưu lại vào session để lần sau không cần tạo lại
+                    if (session == null) {
+                        session = request.getSession(true);
+                    }
+                    // Tăng session timeout để đảm bảo thông báo không bị mất
+                    session.setMaxInactiveInterval(60 * 60); // 1 giờ
+                    session.setAttribute("verifyMessage", message);
+                    session.setAttribute("verifyMessageType", messageType);
+                    session.setAttribute("verifyEmail", email);
+                }
+                
+                // Bước 3: Nếu không có email trong session, thử lấy từ request parameter
+                if (email == null) {
+                    String emailParam = request.getParameter("email");
+                    if (emailParam != null && !emailParam.trim().isEmpty()) {
+                        email = emailParam;
+                        // Nếu có email từ parameter, hiển thị thông báo mặc định
+                        message = "Đăng ký thành công! Vui lòng kiểm tra email để xác minh tài khoản.";
+                        messageType = "success";
+                        
+                        // Lưu lại vào session để lần sau không cần parameter
+                        if (session == null) {
+                            session = request.getSession(true);
+                        }
+                        // Tăng session timeout để đảm bảo thông báo không bị mất
+                        session.setMaxInactiveInterval(60 * 60); // 1 giờ
+                        session.setAttribute("verifyMessage", message);
+                        session.setAttribute("verifyMessageType", messageType);
+                        session.setAttribute("verifyEmail", email);
+                    }
+                }
+                
+                // Bước 4: Nếu vẫn không có message, dùng message mặc định
+                if (message == null || message.trim().isEmpty()) {
+                    message = "Vui lòng kiểm tra email để lấy link xác minh.";
+                    messageType = "info";
                 }
                 
                 // Luôn set attributes vào request
@@ -137,12 +181,26 @@ public class EmailVerificationServlet extends HttpServlet {
                 if (existingUser != null) {
                     // User đã tồn tại, có thể đã xác minh rồi
                     if (existingUser.isEmailVerified()) {
+                        // Xóa thông báo đăng ký khỏi session nếu có
+                        HttpSession session = request.getSession(false);
+                        if (session != null) {
+                            session.removeAttribute("verifyMessage");
+                            session.removeAttribute("verifyMessageType");
+                            session.removeAttribute("verifyEmail");
+                        }
                         request.setAttribute("message", "Email của bạn đã được xác minh rồi. Bạn có thể đăng nhập ngay.");
                         request.setAttribute("messageType", "success");
                     } else {
                         // User tồn tại nhưng chưa xác minh (trường hợp cũ)
                         boolean verified = userDAO.verifyEmail(token);
                         if (verified) {
+                            // Xóa thông báo đăng ký khỏi session sau khi đã xác minh thành công
+                            HttpSession session = request.getSession(false);
+                            if (session != null) {
+                                session.removeAttribute("verifyMessage");
+                                session.removeAttribute("verifyMessageType");
+                                session.removeAttribute("verifyEmail");
+                            }
                             request.setAttribute("message", "Email đã được xác minh thành công! Bạn có thể đăng nhập ngay.");
                             request.setAttribute("messageType", "success");
                         } else {
@@ -181,6 +239,14 @@ public class EmailVerificationServlet extends HttpServlet {
                 pendingDAO.deleteByToken(token);
                 
                 System.out.println("User đã được tạo thành công: " + newUser.getUsername());
+                
+                // Xóa thông báo đăng ký khỏi session sau khi đã xác minh thành công
+                HttpSession session = request.getSession(false);
+                if (session != null) {
+                    session.removeAttribute("verifyMessage");
+                    session.removeAttribute("verifyMessageType");
+                    session.removeAttribute("verifyEmail");
+                }
                 
                 request.setAttribute("message", "Email đã được xác minh thành công! Tài khoản của bạn đã được tạo. Bạn có thể đăng nhập ngay.");
                 request.setAttribute("messageType", "success");

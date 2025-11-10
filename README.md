@@ -171,9 +171,35 @@ Xem file **[DEPLOYMENT.md](DEPLOYMENT.md)** để biết cách:
 - Deploy lên Cloud Platforms (AWS, Azure, GCP)
 - Cấu hình bảo mật
 
+### Deploy lên iNET.vn (VPS Việt Nam):
+Xem file **[DEPLOY_INET_VN.md](DEPLOY_INET_VN.md)** để biết cách:
+- Đăng ký và cấu hình VPS trên iNET.vn
+- Cài đặt Java, Tomcat, SQL Server trên VPS
+- Upload và deploy WAR file
+- Cấu hình Nginx reverse proxy
+- Cấu hình SSL/HTTPS với Let's Encrypt
+- Troubleshooting các vấn đề thường gặp
+
+### ⚠️ Vercel và Java Applications:
+**Vercel KHÔNG hỗ trợ Java backend!** Xem file **[VERCEL_DEPLOYMENT_OPTIONS.md](VERCEL_DEPLOYMENT_OPTIONS.md)** để biết:
+- Tại sao Vercel không phù hợp cho Java Web Application
+- Các giải pháp thay thế (tách frontend/backend, chuyển sang Next.js)
+- Các platform hỗ trợ Java (Railway.app, Render.com, AWS, Azure)
+
+### Platform hỗ trợ Java (Khuyến nghị):
+- **Railway.app** ⭐ - Dễ deploy, free tier $5/tháng
+- **Render.com** - Free tier, deploy từ GitHub
+- **AWS Elastic Beanstalk** - Free tier 12 tháng
+- **Azure App Service** - Free tier, tích hợp Azure SQL
+- **VPS (iNET.vn)** - Full control, giá rẻ
+
 ### File cấu hình mẫu:
 - `config.example.properties` - Mẫu cấu hình properties
 - `env.example` - Mẫu environment variables
+
+### Scripts hỗ trợ:
+- `build-war.bat` - Build WAR file trên Windows
+- `build-war.sh` - Build WAR file trên Linux/Mac
 
 ## 📝 Ghi chú
 

@@ -2,21 +2,35 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
 <%
-    com.ecommerce.model.User user = (com.ecommerce.model.User) session.getAttribute("user");
-    pageContext.setAttribute("currentUser", user);
-    
-    // Đếm số lượng cart items (cần load từ CartDAO)
+    // Xử lý an toàn session và user
+    com.ecommerce.model.User user = null;
     int cartCount = 0;
-    if (user != null) {
-        try {
-            com.ecommerce.dao.CartDAO cartDAO = new com.ecommerce.dao.CartDAO();
-            cartCount = cartDAO.getCartItemsByUserId(user.getUserId()).size();
-        } catch (Exception e) {
-            // Nếu có lỗi, chỉ log và giữ cartCount = 0
-            e.printStackTrace();
-            cartCount = 0;
+    
+    try {
+        HttpSession currentSession = request.getSession(false);
+        if (currentSession != null) {
+            user = (com.ecommerce.model.User) currentSession.getAttribute("user");
+            
+            // Đếm số lượng cart items (cần load từ CartDAO)
+            if (user != null) {
+                try {
+                    com.ecommerce.dao.CartDAO cartDAO = new com.ecommerce.dao.CartDAO();
+                    cartCount = cartDAO.getCartItemsByUserId(user.getUserId()).size();
+                } catch (Exception e) {
+                    // Nếu có lỗi, chỉ log và giữ cartCount = 0
+                    System.err.println("Lỗi khi load cart count: " + e.getMessage());
+                    cartCount = 0;
+                }
+            }
         }
+    } catch (Exception e) {
+        // Nếu có lỗi, chỉ log và giữ user = null
+        System.err.println("Lỗi khi load user từ session: " + e.getMessage());
+        user = null;
+        cartCount = 0;
     }
+    
+    pageContext.setAttribute("currentUser", user);
     pageContext.setAttribute("cartCount", cartCount);
 %>
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top shadow-sm">
