@@ -22,7 +22,7 @@
                     </c:if>
                     
                     <c:if test="${success != null}">
-                        <div class="alert alert-success">
+                        <div class="alert alert-success alert-persistent">
                             <i class="fas fa-check-circle me-2"></i>${success}
                         </div>
                     </c:if>

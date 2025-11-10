@@ -18,7 +18,7 @@
                 <div class="card-body p-4">
                     <c:choose>
                         <c:when test="${not empty messageType and messageType == 'success'}">
-                            <div class="alert alert-success" role="alert">
+                            <div class="alert alert-success alert-persistent" role="alert">
                                 <i class="fas fa-check-circle me-2"></i>
                                 <strong>Thành công!</strong><br>
                                 <c:out value="${message}" default="Email đã được xác minh thành công!"/>
@@ -31,7 +31,7 @@
                         </c:when>
                         
                         <c:when test="${not empty messageType and messageType == 'error'}">
-                            <div class="alert alert-danger" role="alert">
+                            <div class="alert alert-danger alert-persistent" role="alert">
                                 <i class="fas fa-exclamation-circle me-2"></i>
                                 <strong>Lỗi!</strong><br>
                                 <c:out value="${message}" default="Có lỗi xảy ra khi xác minh email."/>
@@ -44,7 +44,7 @@
                         </c:when>
                         
                         <c:when test="${not empty messageType and messageType == 'warning'}">
-                            <div class="alert alert-warning" role="alert">
+                            <div class="alert alert-warning alert-persistent" role="alert">
                                 <i class="fas fa-exclamation-triangle me-2"></i>
                                 <strong>Cảnh báo!</strong><br>
                                 <c:out value="${message}" default="Có cảnh báo về xác minh email."/>
@@ -63,7 +63,7 @@
                         </c:when>
                         
                         <c:otherwise>
-                            <div class="alert alert-info" role="alert">
+                            <div class="alert alert-info alert-persistent" role="alert">
                                 <i class="fas fa-info-circle me-2"></i>
                                 <strong>Thông tin:</strong><br>
                                 <c:choose>
