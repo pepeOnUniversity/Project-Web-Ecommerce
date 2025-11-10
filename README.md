@@ -89,9 +89,9 @@ WebEcommerce/
 - Có thể chạy ngay mà không cần cấu hình thêm
 
 **Cho Production:**
-- Xem file `DEPLOYMENT.md` để biết cách cấu hình
 - Sử dụng Environment Variables hoặc System Properties
 - KHÔNG hardcode credentials trong code
+- Cấu hình database connection qua environment variables: `DB_URL`, `DB_USER`, `DB_PASSWORD`
 
 ### Bước 3: Thêm Dependencies vào NetBeans
 
@@ -163,28 +163,16 @@ Trong `web.xml`, session timeout được set là 30 phút. Bạn có thể thay
 - ✅ Image storage hỗ trợ external path
 - ✅ Không hardcode credentials trong code
 
-### Hướng dẫn chi tiết:
-Xem file **[DEPLOYMENT.md](DEPLOYMENT.md)** để biết cách:
-- Build WAR file
-- Cấu hình environment variables
-- Deploy lên Tomcat
-- Deploy lên Cloud Platforms (AWS, Azure, GCP)
-- Cấu hình bảo mật
+### Hướng dẫn deploy:
+- Build WAR file: Sử dụng script `build-war.bat` (Windows) hoặc `build-war.sh` (Linux/Mac)
+- Cấu hình environment variables: Xem file `env.example` để biết các biến cần thiết
+- Deploy lên Tomcat: Copy WAR file vào thư mục `webapps` của Tomcat
+- Deploy lên Cloud Platforms: AWS Elastic Beanstalk, Azure App Service, Railway.app, Render.com
+- Cấu hình bảo mật: Sử dụng HTTPS, cấu hình firewall, bảo vệ credentials
 
-### Deploy lên iNET.vn (VPS Việt Nam):
-Xem file **[DEPLOY_INET_VN.md](DEPLOY_INET_VN.md)** để biết cách:
-- Đăng ký và cấu hình VPS trên iNET.vn
-- Cài đặt Java, Tomcat, SQL Server trên VPS
-- Upload và deploy WAR file
-- Cấu hình Nginx reverse proxy
-- Cấu hình SSL/HTTPS với Let's Encrypt
-- Troubleshooting các vấn đề thường gặp
-
-### ⚠️ Vercel và Java Applications:
-**Vercel KHÔNG hỗ trợ Java backend!** Xem file **[VERCEL_DEPLOYMENT_OPTIONS.md](VERCEL_DEPLOYMENT_OPTIONS.md)** để biết:
-- Tại sao Vercel không phù hợp cho Java Web Application
-- Các giải pháp thay thế (tách frontend/backend, chuyển sang Next.js)
-- Các platform hỗ trợ Java (Railway.app, Render.com, AWS, Azure)
+### ⚠️ Lưu ý về Platform:
+- **Vercel KHÔNG hỗ trợ Java backend!** Vercel chỉ hỗ trợ serverless functions (Node.js, Python, etc.)
+- Để deploy Java application, sử dụng các platform hỗ trợ Java như Railway.app, Render.com, AWS, Azure
 
 ### Platform hỗ trợ Java (Khuyến nghị):
 - **Railway.app** ⭐ - Dễ deploy, free tier $5/tháng
