@@ -17,11 +17,11 @@
                 </div>
                 <div class="card-body p-4">
                     <c:choose>
-                        <c:when test="${messageType == 'success'}">
+                        <c:when test="${not empty messageType and messageType == 'success'}">
                             <div class="alert alert-success" role="alert">
                                 <i class="fas fa-check-circle me-2"></i>
                                 <strong>Thành công!</strong><br>
-                                ${message}
+                                <c:out value="${message}" default="Email đã được xác minh thành công!"/>
                             </div>
                             <div class="text-center mt-4">
                                 <a href="${pageContext.request.contextPath}/login" class="btn btn-primary">
@@ -30,11 +30,11 @@
                             </div>
                         </c:when>
                         
-                        <c:when test="${messageType == 'error'}">
+                        <c:when test="${not empty messageType and messageType == 'error'}">
                             <div class="alert alert-danger" role="alert">
                                 <i class="fas fa-exclamation-circle me-2"></i>
                                 <strong>Lỗi!</strong><br>
-                                ${message}
+                                <c:out value="${message}" default="Có lỗi xảy ra khi xác minh email."/>
                             </div>
                             <div class="text-center mt-4">
                                 <a href="${pageContext.request.contextPath}/register" class="btn btn-primary">
@@ -43,15 +43,15 @@
                             </div>
                         </c:when>
                         
-                        <c:when test="${messageType == 'warning'}">
+                        <c:when test="${not empty messageType and messageType == 'warning'}">
                             <div class="alert alert-warning" role="alert">
                                 <i class="fas fa-exclamation-triangle me-2"></i>
                                 <strong>Cảnh báo!</strong><br>
-                                ${message}
+                                <c:out value="${message}" default="Có cảnh báo về xác minh email."/>
                             </div>
-                            <c:if test="${email != null}">
+                            <c:if test="${not empty email}">
                                 <div class="mt-3">
-                                    <p class="text-muted">Email của bạn: <strong>${email}</strong></p>
+                                    <p class="text-muted">Email của bạn: <strong><c:out value="${email}"/></strong></p>
                                     <p class="text-muted">Vui lòng liên hệ hỗ trợ để được hỗ trợ xác minh email.</p>
                                 </div>
                             </c:if>
@@ -67,17 +67,17 @@
                                 <i class="fas fa-info-circle me-2"></i>
                                 <strong>Thông tin:</strong><br>
                                 <c:choose>
-                                    <c:when test="${message != null}">
-                                        ${message}
+                                    <c:when test="${not empty message}">
+                                        <c:out value="${message}"/>
                                     </c:when>
                                     <c:otherwise>
                                         Vui lòng kiểm tra email để lấy link xác minh.
                                     </c:otherwise>
                                 </c:choose>
                             </div>
-                            <c:if test="${email != null}">
+                            <c:if test="${not empty email}">
                                 <div class="mt-3">
-                                    <p class="text-muted">Email của bạn: <strong>${email}</strong></p>
+                                    <p class="text-muted">Email của bạn: <strong><c:out value="${email}"/></strong></p>
                                     <p class="text-muted">
                                         Chúng tôi đã gửi email xác minh đến địa chỉ email này. 
                                         Vui lòng kiểm tra hộp thư đến (và cả thư mục spam) và click vào link xác minh.
