@@ -7,7 +7,10 @@
 
 <jsp:include page="../common/navbar.jsp"/>
 
-<!-- Hero Banner Slider -->
+<!-- Particle Background -->
+<div id="particle-background"></div>
+
+<!-- Hero Banner Slider with 3D Effect -->
 <div id="heroCarousel" class="carousel slide" data-bs-ride="carousel">
     <div class="carousel-indicators">
         <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active"></button>
@@ -16,8 +19,8 @@
     </div>
     <div class="carousel-inner">
         <div class="carousel-item active">
-            <div class="hero-slide" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 400px; display: flex; align-items: center; justify-content: center;">
-                <div class="text-center text-white">
+            <div id="hero-3d-container" class="hero-slide" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 400px; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden;">
+                <div class="text-center text-white" style="position: relative; z-index: 2;">
                     <h1 class="display-4 fw-bold">Chào mừng đến Ecommerce Store</h1>
                     <p class="lead">Khám phá những sản phẩm công nghệ tuyệt vời</p>
                     <a href="${pageContext.request.contextPath}/products" class="btn btn-light btn-lg mt-3">Mua ngay</a>

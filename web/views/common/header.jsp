@@ -17,6 +17,9 @@
     <!-- AOS Animation -->
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
     
+    <!-- Three.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
     <!-- Custom CSS -->
     <link href="${pageContext.request.contextPath}/assets/css/style.css" rel="stylesheet">
 </head>

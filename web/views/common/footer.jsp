@@ -43,6 +43,9 @@
 <script src="${pageContext.request.contextPath}/assets/js/cart.js"></script>
 <script src="${pageContext.request.contextPath}/assets/js/main.js"></script>
 
+<!-- Three.js Effects -->
+<script src="${pageContext.request.contextPath}/assets/js/three-effects.js"></script>
+
 </body>
 </html>
 
