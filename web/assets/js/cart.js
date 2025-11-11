@@ -13,7 +13,8 @@ function addToCart(productId, quantity = 1) {
     fetch(contextPath + '/cart', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
         },
         body: params
     })
@@ -28,6 +29,13 @@ function addToCart(productId, quantity = 1) {
                 throw new Error('Server returned non-JSON response');
             });
         }
+        // Kiểm tra status code
+        if (!response.ok) {
+            // Nếu là lỗi, vẫn parse JSON để lấy message
+            return response.json().then(data => {
+                throw new Error(data.message || 'Có lỗi xảy ra');
+            });
+        }
         return response.json();
     })
     .then(data => {
@@ -40,7 +48,7 @@ function addToCart(productId, quantity = 1) {
     })
     .catch(error => {
         console.error('Error:', error);
-        showToast('error', 'Có lỗi xảy ra khi thêm vào giỏ hàng');
+        showToast('error', error.message || 'Có lỗi xảy ra khi thêm vào giỏ hàng');
     });
 }
 
@@ -53,11 +61,19 @@ function updateCartItem(cartItemId, quantity) {
     fetch(contextPath + '/cart', {
         method: 'PUT',
         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
         },
         body: params
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.message || 'Có lỗi xảy ra');
+            });
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             showToast('success', data.message);
@@ -68,7 +84,7 @@ function updateCartItem(cartItemId, quantity) {
     })
     .catch(error => {
         console.error('Error:', error);
-        showToast('error', 'Có lỗi xảy ra khi cập nhật giỏ hàng');
+        showToast('error', error.message || 'Có lỗi xảy ra khi cập nhật giỏ hàng');
     });
 }
 
@@ -84,11 +100,19 @@ function removeCartItem(cartItemId) {
     fetch(contextPath + '/cart', {
         method: 'DELETE',
         headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest'
         },
         body: params
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.message || 'Có lỗi xảy ra');
+            });
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.success) {
             showToast('success', data.message);
@@ -108,7 +132,7 @@ function removeCartItem(cartItemId) {
     })
     .catch(error => {
         console.error('Error:', error);
-        showToast('error', 'Có lỗi xảy ra khi xóa sản phẩm');
+        showToast('error', error.message || 'Có lỗi xảy ra khi xóa sản phẩm');
     });
 }
 
