@@ -181,7 +181,7 @@
                     </thead>
                     <tbody>
                         <c:forEach var="product" items="${products}">
-                            <c:if test="${param.showDeleted == 'true' || product.active}">
+                            <c:if test="${param.showDeleted == 'true' ? !product.active : product.active}">
                             <tr class="${!product.active ? 'table-secondary' : ''}">
                                 <td>
                                     <c:set var="imageUrl" value="${product.displayImageUrl}"/>
