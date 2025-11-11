@@ -85,8 +85,64 @@ main {
 }
 
 .navbar.scrolled {
-    background: rgba(255, 255, 255, 0.15) !important;
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.5);
+    background: linear-gradient(135deg, rgba(26, 26, 46, 0.95) 0%, rgba(44, 62, 80, 0.95) 100%) !important;
+    backdrop-filter: blur(30px) saturate(200%);
+    -webkit-backdrop-filter: blur(30px) saturate(200%);
+    border-bottom: 2px solid rgba(102, 126, 234, 0.5);
+    box-shadow: 0 12px 48px 0 rgba(0, 0, 0, 0.4), 
+                0 0 0 1px rgba(102, 126, 234, 0.2),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.navbar.scrolled .navbar-brand {
+    background: linear-gradient(135deg, #ffffff 0%, #e0e7ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 2px 4px rgba(102, 126, 234, 0.3));
+}
+
+.navbar.scrolled .nav-link {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.navbar.scrolled .nav-link:hover {
+    color: #ffffff !important;
+    background: rgba(102, 126, 234, 0.2);
+}
+
+.navbar.scrolled .nav-link::before {
+    background: linear-gradient(135deg, #667eea 0%, #e0e7ff 100%);
+}
+
+.navbar.scrolled .navbar-toggler {
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.navbar.scrolled .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(255, 255, 255, 0.9)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+.navbar.scrolled .dropdown-menu {
+    background: rgba(26, 26, 46, 0.98);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(102, 126, 234, 0.3);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.navbar.scrolled .dropdown-item {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.navbar.scrolled .dropdown-item:hover {
+    background: rgba(102, 126, 234, 0.2);
+    color: #ffffff;
+}
+
+.navbar.scrolled .badge {
+    background: linear-gradient(135deg, #f5576c 0%, #fa709a 100%) !important;
+    box-shadow: 0 2px 8px rgba(245, 87, 108, 0.4);
 }
 
 .navbar-brand {
