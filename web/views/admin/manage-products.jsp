@@ -150,15 +150,10 @@
                                placeholder="Không giới hạn" min="0" step="1000" value="${filterMaxPrice}">
                     </div>
                     
-                    <!-- Filter Button -->
-                    <div class="col-md-6 d-flex align-items-end">
-                        <button type="submit" class="btn btn-primary me-2">
-                            <i class="fas fa-search me-2"></i>Lọc
-                        </button>
-                        <c:if test="${param.showDeleted == 'true'}">
-                            <input type="hidden" name="showDeleted" value="true">
-                        </c:if>
-                    </div>
+                    <!-- Hidden input for showDeleted -->
+                    <c:if test="${param.showDeleted == 'true'}">
+                        <input type="hidden" name="showDeleted" value="true">
+                    </c:if>
                 </div>
             </form>
         </div>
@@ -608,8 +603,70 @@ function clearFilters() {
     window.location.href = url.toString();
 }
 
+// Auto-filter: Tự động submit form khi thay đổi filter
+(function() {
+    const filterForm = document.getElementById('filterForm');
+    if (!filterForm) return;
+    
+    // Debounce timers cho từng input riêng biệt để tránh conflict
+    const debounceTimers = {};
+    
+    // Debounce function để tránh submit quá nhiều lần khi gõ
+    function debounceSubmit(filterId, callback, delay = 800) {
+        // Clear timer cũ nếu có
+        if (debounceTimers[filterId]) {
+            clearTimeout(debounceTimers[filterId]);
+        }
+        // Set timer mới
+        debounceTimers[filterId] = setTimeout(function() {
+            delete debounceTimers[filterId];
+            callback();
+        }, delay);
+    }
+    
+    // Helper function để submit form với showDeleted
+    function submitFilterForm() {
+        // Giữ lại showDeleted nếu đang bật
+        const showDeleted = document.getElementById('showDeleted');
+        if (showDeleted && showDeleted.checked) {
+            const hiddenInput = filterForm.querySelector('input[name="showDeleted"]');
+            if (!hiddenInput) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'showDeleted';
+                input.value = 'true';
+                filterForm.appendChild(input);
+            }
+        }
+        filterForm.submit();
+    }
+    
+    // Auto-submit cho select và checkbox (ngay lập tức)
+    const immediateFilters = ['categoryId', 'status', 'featured', 'lowStock'];
+    immediateFilters.forEach(filterId => {
+        const element = document.getElementById(filterId);
+        if (element) {
+            element.addEventListener('change', function() {
+                // Clear bất kỳ debounce timer nào đang chờ cho các input khác
+                Object.keys(debounceTimers).forEach(key => {
+                    clearTimeout(debounceTimers[key]);
+                    delete debounceTimers[key];
+                });
+                submitFilterForm();
+            });
+        }
+    });
+    
+    // Auto-submit cho input text/number với debounce (sau khi ngừng gõ 800ms)
+    const debouncedFilters = ['search', 'minPrice', 'maxPrice'];
+    debouncedFilters.forEach(filterId => {
+        const element = document.getElementById(filterId);
+        if (element) {
+            element.addEventListener('input', function() {
+                debounceSubmit(filterId, submitFilterForm, 800);
+            });
+        }
+    });
+})();
+
 </script>
-
-
-
-

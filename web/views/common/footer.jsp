@@ -8,9 +8,9 @@
             </div>
             <div class="col-md-4 mb-3">
                 <h5>Liên hệ</h5>
-                <p class="mb-1"><i class="fas fa-phone me-2"></i>Hotline: 0123 456 789</p>
-                <p class="mb-1"><i class="fas fa-envelope me-2"></i>Email: support@ecommerce.com</p>
-                <p class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>123 Đường ABC, TP.HCM</p>
+                <p class="mb-1"><i class="fas fa-phone me-2"></i>Hotline: 0586255568</p>
+                <p class="mb-1"><i class="fas fa-envelope me-2"></i>Email: contact.me.dothehung@gmail.com</p>
+                <p class="mb-0"><i class="fas fa-map-marker-alt me-2"></i>Hà Nội</p>
             </div>
             <div class="col-md-4 mb-3">
                 <h5>Theo dõi chúng tôi</h5>
