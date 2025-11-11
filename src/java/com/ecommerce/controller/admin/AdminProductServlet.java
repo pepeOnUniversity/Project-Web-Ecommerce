@@ -145,7 +145,7 @@ public class AdminProductServlet extends HttpServlet {
         } else if ("update".equals(action)) {
             updateProduct(request, response);
         } else {
-            response.sendRedirect(request.getContextPath() + "/admin/products?error=invalid_action");
+            response.sendRedirect(buildRedirectUrl(request, "error=invalid_action"));
         }
     }
     
@@ -161,7 +161,7 @@ public class AdminProductServlet extends HttpServlet {
             Product product = productDAO.getProductByIdForAdmin(productId);
             
             if (product == null) {
-                response.sendRedirect(request.getContextPath() + "/admin/products?error=product_not_found");
+                response.sendRedirect(buildRedirectUrl(request, "error=product_not_found"));
                 return;
             }
             
@@ -172,14 +172,38 @@ public class AdminProductServlet extends HttpServlet {
             // Load products và categories để hiển thị
             request.setAttribute("products", productDAO.getAllProductsForAdmin());
             
+            // Giữ lại filter parameters để hiển thị trong form
+            String categoryIdParam = request.getParameter("categoryId");
+            String status = request.getParameter("status");
+            String featured = request.getParameter("featured");
+            String searchKeyword = request.getParameter("search");
+            String minPriceParam = request.getParameter("minPrice");
+            String maxPriceParam = request.getParameter("maxPrice");
+            String lowStockParam = request.getParameter("lowStock");
+            
+            // Set filter values để giữ lại trong form
+            if (categoryIdParam != null && !categoryIdParam.trim().isEmpty()) {
+                try {
+                    request.setAttribute("filterCategoryId", Integer.parseInt(categoryIdParam));
+                } catch (NumberFormatException e) {
+                    // Ignore
+                }
+            }
+            request.setAttribute("filterStatus", status);
+            request.setAttribute("filterFeatured", featured);
+            request.setAttribute("filterSearch", searchKeyword);
+            request.setAttribute("filterMinPrice", minPriceParam);
+            request.setAttribute("filterMaxPrice", maxPriceParam);
+            request.setAttribute("filterLowStock", lowStockParam);
+            
             // Forward về trang quản lý với modal edit mở
             request.getRequestDispatcher("/views/admin/manage-products.jsp").forward(request, response);
             
         } catch (NumberFormatException e) {
-            response.sendRedirect(request.getContextPath() + "/admin/products?error=invalid_id");
+            response.sendRedirect(buildRedirectUrl(request, "error=invalid_id"));
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error showing edit form", e);
-            response.sendRedirect(request.getContextPath() + "/admin/products?error=server_error");
+            response.sendRedirect(buildRedirectUrl(request, "error=server_error"));
         }
     }
     
@@ -221,21 +245,21 @@ public class AdminProductServlet extends HttpServlet {
                     product.setImageUrl(imageUrl.trim());
                 } else {
                     LOGGER.log(Level.WARNING, "Invalid image URL format for new product: " + productName);
-                    response.sendRedirect(request.getContextPath() + "/admin/products?error=invalid_image_url");
+                    response.sendRedirect(buildRedirectUrl(request, "error=invalid_image_url"));
                     return;
                 }
             }
             
             // Thêm vào database
             if (productDAO.addProduct(product)) {
-                response.sendRedirect(request.getContextPath() + "/admin/products?success=added");
+                response.sendRedirect(buildRedirectUrl(request, "success=added"));
             } else {
-                response.sendRedirect(request.getContextPath() + "/admin/products?error=add_failed");
+                response.sendRedirect(buildRedirectUrl(request, "error=add_failed"));
             }
             
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error adding product", e);
-            response.sendRedirect(request.getContextPath() + "/admin/products?error=server_error");
+            response.sendRedirect(buildRedirectUrl(request, "error=server_error"));
         }
     }
     
@@ -251,7 +275,7 @@ public class AdminProductServlet extends HttpServlet {
             Product existingProduct = productDAO.getProductByIdForAdmin(productId);
             
             if (existingProduct == null) {
-                response.sendRedirect(request.getContextPath() + "/admin/products?error=product_not_found");
+                response.sendRedirect(buildRedirectUrl(request, "error=product_not_found"));
                 return;
             }
             
@@ -285,7 +309,7 @@ public class AdminProductServlet extends HttpServlet {
                     existingProduct.setImageUrl(imageUrl.trim());
                 } else {
                     LOGGER.log(Level.WARNING, "Invalid image URL format for product update: " + productId);
-                    response.sendRedirect(request.getContextPath() + "/admin/products?error=invalid_image_url");
+                    response.sendRedirect(buildRedirectUrl(request, "error=invalid_image_url"));
                     return;
                 }
             }
@@ -293,14 +317,14 @@ public class AdminProductServlet extends HttpServlet {
             
             // Cập nhật database
             if (productDAO.updateProduct(existingProduct)) {
-                response.sendRedirect(request.getContextPath() + "/admin/products?success=updated");
+                response.sendRedirect(buildRedirectUrl(request, "success=updated"));
             } else {
-                response.sendRedirect(request.getContextPath() + "/admin/products?error=update_failed");
+                response.sendRedirect(buildRedirectUrl(request, "error=update_failed"));
             }
             
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error updating product", e);
-            response.sendRedirect(request.getContextPath() + "/admin/products?error=server_error");
+            response.sendRedirect(buildRedirectUrl(request, "error=server_error"));
         }
     }
     
@@ -321,6 +345,46 @@ public class AdminProductServlet extends HttpServlet {
     }
     
     /**
+     * Xây dựng redirect URL với filter parameters được giữ lại
+     * @param request HttpServletRequest để lấy filter parameters
+     * @param successOrError Tham số success hoặc error (ví dụ: "success=updated" hoặc "error=server_error")
+     * @return URL đầy đủ với filter parameters
+     */
+    private String buildRedirectUrl(HttpServletRequest request, String successOrError) {
+        StringBuilder url = new StringBuilder(request.getContextPath() + "/admin/products");
+        
+        // Thêm success/error parameter
+        if (successOrError != null && !successOrError.isEmpty()) {
+            url.append("?").append(successOrError);
+        }
+        
+        // Lấy các filter parameters từ request (có thể từ GET hoặc POST với hidden fields)
+        String[] filterParams = {"search", "categoryId", "status", "featured", "minPrice", "maxPrice", "lowStock", "showDeleted"};
+        boolean firstParam = (successOrError == null || successOrError.isEmpty());
+        
+        for (String param : filterParams) {
+            String value = request.getParameter(param);
+            if (value != null && !value.trim().isEmpty()) {
+                if (firstParam) {
+                    url.append("?");
+                    firstParam = false;
+                } else {
+                    url.append("&");
+                }
+                try {
+                    // URL encode để tránh lỗi với ký tự đặc biệt
+                    url.append(param).append("=").append(java.net.URLEncoder.encode(value, "UTF-8"));
+                } catch (java.io.UnsupportedEncodingException e) {
+                    // Fallback nếu encoding không hỗ trợ
+                    url.append(param).append("=").append(value);
+                }
+            }
+        }
+        
+        return url.toString();
+    }
+    
+    /**
      * Xóa sản phẩm
      */
     private void deleteProduct(HttpServletRequest request, HttpServletResponse response)
@@ -330,7 +394,7 @@ public class AdminProductServlet extends HttpServlet {
             String idParam = request.getParameter("id");
             if (idParam == null || idParam.trim().isEmpty()) {
                 LOGGER.log(Level.WARNING, "Product ID parameter is missing");
-                response.sendRedirect(request.getContextPath() + "/admin/products?error=invalid_id");
+                response.sendRedirect(buildRedirectUrl(request, "error=invalid_id"));
                 return;
             }
             
@@ -341,7 +405,7 @@ public class AdminProductServlet extends HttpServlet {
             Product product = productDAO.getProductByIdForAdmin(productId);
             if (product == null) {
                 LOGGER.log(Level.WARNING, "Product not found with ID: " + productId);
-                response.sendRedirect(request.getContextPath() + "/admin/products?error=product_not_found");
+                response.sendRedirect(buildRedirectUrl(request, "error=product_not_found"));
                 return;
             }
             
@@ -351,7 +415,7 @@ public class AdminProductServlet extends HttpServlet {
             boolean isInUse = productDAO.isProductInUse(productId);
             if (isInUse) {
                 LOGGER.log(Level.WARNING, "Cannot delete product " + productId + " because it is in use (cart_items or order_items)");
-                response.sendRedirect(request.getContextPath() + "/admin/products?error=product_in_use");
+                response.sendRedirect(buildRedirectUrl(request, "error=product_in_use"));
                 return;
             }
             
@@ -363,19 +427,19 @@ public class AdminProductServlet extends HttpServlet {
             
             if (deleted) {
                 LOGGER.log(Level.INFO, "Successfully deleted product: " + productId);
-                response.sendRedirect(request.getContextPath() + "/admin/products?success=deleted");
+                response.sendRedirect(buildRedirectUrl(request, "success=deleted"));
             } else {
                 LOGGER.log(Level.SEVERE, "Failed to delete product in database: " + productId);
-                response.sendRedirect(request.getContextPath() + "/admin/products?error=delete_failed");
+                response.sendRedirect(buildRedirectUrl(request, "error=delete_failed"));
             }
             
         } catch (NumberFormatException e) {
             LOGGER.log(Level.WARNING, "Invalid product ID format: " + request.getParameter("id"), e);
-            response.sendRedirect(request.getContextPath() + "/admin/products?error=invalid_id");
+            response.sendRedirect(buildRedirectUrl(request, "error=invalid_id"));
         } catch (Exception e) {
             LOGGER.log(Level.SEVERE, "Error deleting product", e);
             e.printStackTrace();
-            response.sendRedirect(request.getContextPath() + "/admin/products?error=server_error");
+            response.sendRedirect(buildRedirectUrl(request, "error=server_error"));
         }
     }
 }

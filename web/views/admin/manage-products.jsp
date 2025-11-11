@@ -247,6 +247,31 @@
         <div class="modal-content">
             <form id="addProductForm" action="${pageContext.request.contextPath}/admin/products" method="POST">
                 <input type="hidden" name="action" value="add">
+                <!-- Preserve filter parameters -->
+                <c:if test="${not empty filterSearch}">
+                    <input type="hidden" name="search" value="${filterSearch}">
+                </c:if>
+                <c:if test="${not empty filterCategoryId}">
+                    <input type="hidden" name="categoryId" value="${filterCategoryId}">
+                </c:if>
+                <c:if test="${not empty filterStatus}">
+                    <input type="hidden" name="status" value="${filterStatus}">
+                </c:if>
+                <c:if test="${not empty filterFeatured}">
+                    <input type="hidden" name="featured" value="${filterFeatured}">
+                </c:if>
+                <c:if test="${not empty filterMinPrice}">
+                    <input type="hidden" name="minPrice" value="${filterMinPrice}">
+                </c:if>
+                <c:if test="${not empty filterMaxPrice}">
+                    <input type="hidden" name="maxPrice" value="${filterMaxPrice}">
+                </c:if>
+                <c:if test="${not empty filterLowStock}">
+                    <input type="hidden" name="lowStock" value="${filterLowStock}">
+                </c:if>
+                <c:if test="${param.showDeleted == 'true'}">
+                    <input type="hidden" name="showDeleted" value="true">
+                </c:if>
             <div class="modal-header">
                 <h5 class="modal-title">Thêm sản phẩm mới</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -328,6 +353,31 @@
             <form id="editProductForm" action="${pageContext.request.contextPath}/admin/products" method="POST">
                 <input type="hidden" name="action" value="update">
                 <input type="hidden" id="editProductId" name="productId">
+                <!-- Preserve filter parameters -->
+                <c:if test="${not empty filterSearch}">
+                    <input type="hidden" name="search" value="${filterSearch}">
+                </c:if>
+                <c:if test="${not empty filterCategoryId}">
+                    <input type="hidden" name="categoryId" value="${filterCategoryId}">
+                </c:if>
+                <c:if test="${not empty filterStatus}">
+                    <input type="hidden" name="status" value="${filterStatus}">
+                </c:if>
+                <c:if test="${not empty filterFeatured}">
+                    <input type="hidden" name="featured" value="${filterFeatured}">
+                </c:if>
+                <c:if test="${not empty filterMinPrice}">
+                    <input type="hidden" name="minPrice" value="${filterMinPrice}">
+                </c:if>
+                <c:if test="${not empty filterMaxPrice}">
+                    <input type="hidden" name="maxPrice" value="${filterMaxPrice}">
+                </c:if>
+                <c:if test="${not empty filterLowStock}">
+                    <input type="hidden" name="lowStock" value="${filterLowStock}">
+                </c:if>
+                <c:if test="${param.showDeleted == 'true'}">
+                    <input type="hidden" name="showDeleted" value="true">
+                </c:if>
                 <div class="modal-header">
                     <h5 class="modal-title">Sửa sản phẩm</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -449,18 +499,23 @@ function resetAddForm() {
 
 // Edit product
 function editProduct(productId) {
-    // Fetch product data via AJAX
-    fetch('${pageContext.request.contextPath}/admin/products?action=edit&id=' + productId)
-        .then(response => response.text())
-        .then(html => {
-            // Parse response và lấy product data từ server
-            // Tạm thời dùng cách đơn giản: load lại trang với param
-            window.location.href = '${pageContext.request.contextPath}/admin/products?action=edit&id=' + productId;
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Không thể tải thông tin sản phẩm');
-        });
+    // Lấy filter parameters từ URL hiện tại
+    const url = new URL(window.location.href);
+    const params = new URLSearchParams();
+    params.set('action', 'edit');
+    params.set('id', productId);
+    
+    // Giữ lại các filter parameters
+    const filterParams = ['search', 'categoryId', 'status', 'featured', 'minPrice', 'maxPrice', 'lowStock', 'showDeleted'];
+    filterParams.forEach(param => {
+        const value = url.searchParams.get(param);
+        if (value) {
+            params.set(param, value);
+        }
+    });
+    
+    // Load lại trang với filter parameters
+    window.location.href = '${pageContext.request.contextPath}/admin/products?' + params.toString();
 }
 
 // Load product data vào edit form (khi có product trong request)
@@ -505,7 +560,22 @@ function editProduct(productId) {
 // Delete product
 function deleteProduct(productId) {
     if (confirm('Bạn có chắc chắn muốn xóa sản phẩm này? Sản phẩm sẽ bị ẩn khỏi danh sách nhưng vẫn có thể khôi phục.')) {
-        window.location.href = '${pageContext.request.contextPath}/admin/products?action=delete&id=' + productId;
+        // Lấy filter parameters từ URL hiện tại
+        const url = new URL(window.location.href);
+        const params = new URLSearchParams();
+        params.set('action', 'delete');
+        params.set('id', productId);
+        
+        // Giữ lại các filter parameters
+        const filterParams = ['search', 'categoryId', 'status', 'featured', 'minPrice', 'maxPrice', 'lowStock', 'showDeleted'];
+        filterParams.forEach(param => {
+            const value = url.searchParams.get(param);
+            if (value) {
+                params.set(param, value);
+            }
+        });
+        
+        window.location.href = '${pageContext.request.contextPath}/admin/products?' + params.toString();
     }
 }
 
