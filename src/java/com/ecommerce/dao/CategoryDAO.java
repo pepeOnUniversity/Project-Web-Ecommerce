@@ -26,10 +26,11 @@ public class CategoryDAO {
     
     /**
      * Lấy tất cả categories đang active
+     * Bao gồm cả categories 6, 7, 8 ngay cả khi is_active = 0
      */
     public List<Category> getAllCategories() {
         List<Category> categories = new ArrayList<>();
-        String sql = "SELECT * FROM categories WHERE is_active = 1 ORDER BY category_name";
+        String sql = "SELECT * FROM categories WHERE is_active = 1 OR category_id IN (6, 7, 8) ORDER BY category_name";
         
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);

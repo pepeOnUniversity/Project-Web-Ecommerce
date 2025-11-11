@@ -325,10 +325,18 @@ public class ProductDAO {
     
     /**
      * Lấy products theo category
+     * Đối với categories 6, 7, 8: load cả products inactive
+     * Đối với categories khác: chỉ load products active
      */
     public List<Product> getProductsByCategory(int categoryId) {
         List<Product> products = new ArrayList<>();
-        String sql = "SELECT * FROM products WHERE category_id = ? AND is_active = 1 ORDER BY product_id DESC";
+        // Nếu category là 6, 7, 8 thì load cả products inactive
+        String sql;
+        if (categoryId == 6 || categoryId == 7 || categoryId == 8) {
+            sql = "SELECT * FROM products WHERE category_id = ? ORDER BY product_id DESC";
+        } else {
+            sql = "SELECT * FROM products WHERE category_id = ? AND is_active = 1 ORDER BY product_id DESC";
+        }
         
         try (Connection conn = dbConnection.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
