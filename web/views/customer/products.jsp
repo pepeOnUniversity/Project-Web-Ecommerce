@@ -39,12 +39,16 @@
             <div class="card shadow-sm mb-4">
                 <div class="card-body">
                     <form method="get" action="${pageContext.request.contextPath}/products" class="row g-3">
+                        <!-- Hidden input để giữ lại category parameter -->
+                        <c:if test="${selectedCategory != null && !empty selectedCategory}">
+                            <input type="hidden" name="category" value="${selectedCategory}">
+                        </c:if>
                         <div class="col-md-6">
                             <input type="text" name="search" class="form-control" 
                                    placeholder="Tìm kiếm sản phẩm..." value="${searchKeyword}">
                         </div>
                         <div class="col-md-4">
-                            <select name="sort" class="form-select">
+                            <select name="sort" class="form-select" onchange="this.form.submit()">
                                 <option value="">Sắp xếp</option>
                                 <option value="newest" ${sortBy == 'newest' ? 'selected' : ''}>Mới nhất</option>
                                 <option value="price_asc" ${sortBy == 'price_asc' ? 'selected' : ''}>Giá: Thấp đến cao</option>

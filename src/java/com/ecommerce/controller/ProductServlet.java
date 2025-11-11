@@ -46,6 +46,7 @@ public class ProductServlet extends HttpServlet {
     
     /**
      * Hiển thị danh sách sản phẩm
+     * Hỗ trợ kết hợp category + search + sort
      */
     private void showProductList(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -58,28 +59,48 @@ public class ProductServlet extends HttpServlet {
             String searchKeyword = request.getParameter("search");
             String sortBy = request.getParameter("sort");
             
-            List<Product> products;
-            
-            // Lọc theo category
-            if (categoryIdParam != null && !categoryIdParam.isEmpty()) {
-                try {
-                    int categoryId = Integer.parseInt(categoryIdParam);
-                    products = productDAO.getProductsByCategory(categoryId);
-                } catch (NumberFormatException e) {
-                    products = productDAO.getAllProducts();
+            // Trim search keyword nếu có
+            if (searchKeyword != null) {
+                searchKeyword = searchKeyword.trim();
+                if (searchKeyword.isEmpty()) {
+                    searchKeyword = null;
                 }
             }
-            // Tìm kiếm
-            else if (searchKeyword != null && !searchKeyword.isEmpty()) {
-                products = productDAO.searchProducts(searchKeyword);
+            
+            List<Product> products;
+            Integer categoryId = null;
+            
+            // Parse category ID nếu có
+            if (categoryIdParam != null && !categoryIdParam.isEmpty()) {
+                try {
+                    categoryId = Integer.parseInt(categoryIdParam);
+                } catch (NumberFormatException e) {
+                    categoryId = null;
+                }
             }
-            // Tất cả sản phẩm
-            else {
+            
+            // Lấy products theo điều kiện
+            if (categoryId != null && searchKeyword != null && !searchKeyword.isEmpty()) {
+                // Có cả category và search: lấy theo category rồi filter theo search
+                products = productDAO.getProductsByCategory(categoryId);
+                final String keyword = searchKeyword.toLowerCase();
+                products.removeIf(p -> 
+                    !p.getProductName().toLowerCase().contains(keyword) && 
+                    (p.getDescription() == null || !p.getDescription().toLowerCase().contains(keyword))
+                );
+            } else if (categoryId != null) {
+                // Chỉ có category
+                products = productDAO.getProductsByCategory(categoryId);
+            } else if (searchKeyword != null && !searchKeyword.isEmpty()) {
+                // Chỉ có search
+                products = productDAO.searchProducts(searchKeyword);
+            } else {
+                // Không có filter nào, lấy tất cả
                 products = productDAO.getAllProducts();
             }
             
             // Sắp xếp
-            if (sortBy != null) {
+            if (sortBy != null && !sortBy.isEmpty()) {
                 switch (sortBy) {
                     case "price_asc":
                         products.sort((p1, p2) -> p1.getFinalPrice().compareTo(p2.getFinalPrice()));
@@ -88,7 +109,8 @@ public class ProductServlet extends HttpServlet {
                         products.sort((p1, p2) -> p2.getFinalPrice().compareTo(p1.getFinalPrice()));
                         break;
                     case "newest":
-                        // Đã được sort DESC theo ID trong DAO
+                        // Sắp xếp theo ID giảm dần (mới nhất trước)
+                        products.sort((p1, p2) -> Integer.compare(p2.getProductId(), p1.getProductId()));
                         break;
                 }
             }
