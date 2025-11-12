@@ -231,6 +231,21 @@ main {
     z-index: 1;
 }
 
+/* Badge positioning for discount tags */
+.product-card > a {
+    position: relative;
+    display: block;
+    background: #f8f9fa;
+}
+
+.product-card .badge {
+    z-index: 10 !important;
+    position: absolute !important;
+    top: 8px !important;
+    left: 8px !important;
+    margin: 0 !important;
+}
+
 .product-card img {
     transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     width: 100%;
@@ -253,7 +268,7 @@ main {
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+    background: #f8f9fa;
     position: relative;
 }
 
