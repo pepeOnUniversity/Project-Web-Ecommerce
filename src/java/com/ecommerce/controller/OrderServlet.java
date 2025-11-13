@@ -167,18 +167,37 @@ public class OrderServlet extends HttpServlet {
             orderItems.add(orderItem);
         }
         
+        // Lấy payment method (mặc định là COD)
+        String paymentMethod = request.getParameter("paymentMethod");
+        if (paymentMethod == null || paymentMethod.trim().isEmpty()) {
+            paymentMethod = "COD";
+        }
+        
         // Tạo order
         Order order = new Order(user.getUserId(), totalAmount, shippingAddress, phone);
+        order.setPaymentMethod(paymentMethod);
+        
+        // Tạo order trước (với status PENDING nếu là VNPAY)
         int orderId = orderDAO.createOrder(order, orderItems);
         
-        if (orderId > 0) {
-            // Xóa giỏ hàng
-            cartDAO.clearCart(user.getUserId());
-            
-            // Redirect đến trang order history
-            response.sendRedirect(request.getContextPath() + "/orders?orderId=" + orderId);
-        } else {
+        if (orderId <= 0) {
             request.setAttribute("error", "Có lỗi xảy ra khi đặt hàng. Vui lòng thử lại.");
+            showCheckout(request, response, user);
+            return;
+        }
+        
+        // Xử lý theo payment method
+        if ("COD".equals(paymentMethod)) {
+            // COD: Xóa cart và redirect đến order history
+            cartDAO.clearCart(user.getUserId());
+            response.sendRedirect(request.getContextPath() + "/orders?orderId=" + orderId);
+        } else if ("VNPAY".equals(paymentMethod)) {
+            // VNPAY: Redirect đến PaymentServlet với orderId
+            response.sendRedirect(request.getContextPath() + "/payment/vnpay?orderId=" + orderId);
+        } else {
+            // Payment method không hợp lệ: Hủy order
+            orderDAO.updateOrderStatus(orderId, "CANCELLED");
+            request.setAttribute("error", "Phương thức thanh toán không hợp lệ");
             showCheckout(request, response, user);
         }
     }

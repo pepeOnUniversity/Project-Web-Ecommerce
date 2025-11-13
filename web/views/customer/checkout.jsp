@@ -35,7 +35,7 @@
                     </div>
                 </div>
                 
-                <div class="card shadow-sm">
+                <div class="card shadow-sm mb-4">
                     <div class="card-header bg-primary text-white">
                         <h5 class="mb-0"><i class="fas fa-box me-2"></i>Đơn hàng</h5>
                     </div>
@@ -62,6 +62,26 @@
                         </table>
                     </div>
                 </div>
+                
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="fas fa-credit-card me-2"></i>Phương thức thanh toán</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="radio" name="paymentMethod" id="paymentCOD" value="COD" checked>
+                            <label class="form-check-label" for="paymentCOD">
+                                <i class="fas fa-money-bill-wave me-2"></i>Thanh toán khi nhận hàng (COD)
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="paymentMethod" id="paymentVNPay" value="VNPAY">
+                            <label class="form-check-label" for="paymentVNPay">
+                                <i class="fas fa-credit-card me-2"></i>Thanh toán online qua VNPay
+                            </label>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <div class="col-lg-4">
@@ -83,9 +103,13 @@
                             <strong>Tổng cộng:</strong>
                             <strong class="text-danger fs-4"><fmt:formatNumber value="${totalAmount}" type="currency" currencySymbol="₫" maxFractionDigits="0"/></strong>
                         </div>
-                        <button type="submit" class="btn btn-primary w-100 mt-3 btn-lg">
+                        <button type="submit" class="btn btn-primary w-100 mt-3 btn-lg" id="submitBtn">
                             <i class="fas fa-check me-2"></i>Xác nhận đặt hàng
                         </button>
+                        <div id="paymentInfo" class="mt-3 text-muted small" style="display: none;">
+                            <i class="fas fa-info-circle me-1"></i>
+                            <span id="paymentInfoText"></span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -94,6 +118,30 @@
 </div>
 
 <jsp:include page="../common/footer.jsp"/>
+
+<script>
+    // Xử lý khi chọn phương thức thanh toán
+    document.querySelectorAll('input[name="paymentMethod"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const paymentInfo = document.getElementById('paymentInfo');
+            const paymentInfoText = document.getElementById('paymentInfoText');
+            const submitBtn = document.getElementById('submitBtn');
+            
+            if (this.value === 'VNPAY') {
+                paymentInfo.style.display = 'block';
+                paymentInfoText.textContent = 'Bạn sẽ được chuyển đến trang thanh toán VNPay sau khi xác nhận';
+                submitBtn.innerHTML = '<i class="fas fa-credit-card me-2"></i>Thanh toán qua VNPay';
+            } else {
+                paymentInfo.style.display = 'block';
+                paymentInfoText.textContent = 'Bạn sẽ thanh toán khi nhận hàng';
+                submitBtn.innerHTML = '<i class="fas fa-check me-2"></i>Xác nhận đặt hàng';
+            }
+        });
+    });
+    
+    // Trigger change event khi page load
+    document.querySelector('input[name="paymentMethod"]:checked').dispatchEvent(new Event('change'));
+</script>
 
 
 

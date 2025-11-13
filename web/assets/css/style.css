@@ -864,5 +864,137 @@ h2.text-center::after {
     box-shadow: var(--glow-primary);
 }
 
+/* Register Page - Compact Design */
+.register-container {
+    height: calc(100vh - 76px); /* Subtract navbar height */
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0;
+    margin-top: 0;
+    overflow: hidden;
+}
+
+.register-container .container {
+    height: 100%;
+}
+
+.register-container .row {
+    height: 100%;
+    margin: 0;
+}
+
+.register-card {
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+.register-card .card-header {
+    padding: 0.5rem 1rem !important;
+}
+
+.register-card .card-header h5 {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.register-card .card-body {
+    padding: 1rem !important;
+}
+
+.register-card .form-label-sm {
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.register-card .form-control-sm {
+    font-size: 0.875rem;
+    padding: 0.4rem 0.75rem;
+    height: calc(1.5em + 0.8rem + 2px);
+}
+
+.register-card .alert-sm {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.register-card .btn {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.register-card small {
+    display: block;
+    margin-top: 0.2rem;
+}
+
+/* Responsive adjustments for register page */
+@media (max-height: 800px) {
+    .register-container {
+        height: calc(100vh - 60px);
+        padding: 0.25rem 0;
+    }
+    
+    .register-card .card-body {
+        padding: 0.75rem !important;
+    }
+    
+    .register-card .form-control-sm {
+        padding: 0.35rem 0.65rem;
+        height: calc(1.5em + 0.7rem + 2px);
+    }
+    
+    .register-card .card-header {
+        padding: 0.4rem 0.75rem !important;
+    }
+    
+    .register-card .card-header h5 {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .register-container {
+        height: calc(100vh - 60px);
+        padding: 0.25rem 0;
+    }
+    
+    .register-card .card-body {
+        padding: 0.75rem !important;
+    }
+    
+    .register-card .form-label-sm {
+        font-size: 0.8rem;
+    }
+    
+    .register-card .form-control-sm {
+        font-size: 0.8rem;
+        padding: 0.3rem 0.6rem;
+    }
+}
+
+@media (max-height: 700px) {
+    .register-card .card-body {
+        padding: 0.5rem !important;
+    }
+    
+    .register-card .row {
+        margin-bottom: 0.25rem !important;
+    }
+    
+    .register-card .mt-1 {
+        margin-top: 0.25rem !important;
+    }
+    
+    .register-card .mt-2 {
+        margin-top: 0.5rem !important;
+    }
+    
+    .register-card .mt-3 {
+        margin-top: 0.75rem !important;
+    }
+}
+
 
 

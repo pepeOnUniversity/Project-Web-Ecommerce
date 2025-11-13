@@ -67,14 +67,20 @@ public class ImageServlet extends HttpServlet {
         
         // Lấy đường dẫn ảnh từ URL
         String pathInfo = request.getPathInfo();
+        String servletPath = request.getServletPath();
         
-        if (pathInfo == null || pathInfo.trim().isEmpty() || pathInfo.equals("/")) {
+        String imagePath;
+        
+        // Xử lý trường hợp /favicon.ico (mapped từ root)
+        if ("/favicon.ico".equals(servletPath) || "/favicon.ico".equals(pathInfo)) {
+            imagePath = "favicon.ico";
+        } else if (pathInfo == null || pathInfo.trim().isEmpty() || pathInfo.equals("/")) {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "Image path not specified");
             return;
+        } else {
+            // Loại bỏ leading slash
+            imagePath = pathInfo.startsWith("/") ? pathInfo.substring(1) : pathInfo;
         }
-        
-        // Loại bỏ leading slash
-        String imagePath = pathInfo.startsWith("/") ? pathInfo.substring(1) : pathInfo;
         
         // Tạo đường dẫn file đầy đủ
         File imageFile = new File(imageBasePath, imagePath);
@@ -156,6 +162,8 @@ public class ImageServlet extends HttpServlet {
             return "image/webp";
         } else if (lower.endsWith(".svg")) {
             return "image/svg+xml";
+        } else if (lower.endsWith(".ico")) {
+            return "image/x-icon";
         }
         
         return "application/octet-stream";

@@ -14,7 +14,9 @@ public class Order {
     private String shippingAddress;
     private String phone;
     private String status; // PENDING, CONFIRMED, SHIPPING, DELIVERED, CANCELLED
-    private String paymentMethod;
+    private String paymentMethod; // COD, VNPAY
+    private String paymentStatus; // PENDING, PAID, FAILED, CANCELLED, REFUNDED
+    private String vnpTransactionId; // Transaction ID từ VNPay
     private String notes;
     private Timestamp orderDate;
     private List<OrderItem> orderItems;
@@ -95,6 +97,22 @@ public class Order {
     
     public void setPaymentMethod(String paymentMethod) {
         this.paymentMethod = paymentMethod;
+    }
+    
+    public String getPaymentStatus() {
+        return paymentStatus;
+    }
+    
+    public void setPaymentStatus(String paymentStatus) {
+        this.paymentStatus = paymentStatus;
+    }
+    
+    public String getVnpTransactionId() {
+        return vnpTransactionId;
+    }
+    
+    public void setVnpTransactionId(String vnpTransactionId) {
+        this.vnpTransactionId = vnpTransactionId;
     }
     
     public String getNotes() {

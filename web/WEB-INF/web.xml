@@ -70,6 +70,17 @@
         <url-pattern>/images/*</url-pattern>
     </servlet-mapping>
     
+    <!-- Favicon mapping - Some browsers automatically look for /favicon.ico -->
+    <servlet-mapping>
+        <servlet-name>ImageServlet</servlet-name>
+        <url-pattern>/favicon.ico</url-pattern>
+    </servlet-mapping>
+    
+    <!-- 
+    Debug VNPay Servlet được đăng ký bằng @WebServlet annotation
+    Không cần đăng ký trong web.xml
+    -->
+    
 </web-app>
 
 

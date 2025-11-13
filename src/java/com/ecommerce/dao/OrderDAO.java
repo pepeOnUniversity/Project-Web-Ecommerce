@@ -113,8 +113,8 @@ public class OrderDAO {
      * Tạo order mới
      */
     public int createOrder(Order order, List<OrderItem> orderItems) {
-        String sql = "INSERT INTO orders (user_id, total_amount, shipping_address, phone, status, order_date) " +
-                     "VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO orders (user_id, total_amount, shipping_address, phone, status, payment_method, payment_status, order_date) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         
         Connection conn = null;
         try {
@@ -127,7 +127,9 @@ public class OrderDAO {
                 ps.setString(3, order.getShippingAddress());
                 ps.setString(4, order.getPhone());
                 ps.setString(5, order.getStatus() != null ? order.getStatus() : "PENDING");
-                ps.setTimestamp(6, new Timestamp(System.currentTimeMillis()));
+                ps.setString(6, order.getPaymentMethod() != null ? order.getPaymentMethod() : "COD");
+                ps.setString(7, "PENDING"); // payment_status mặc định là PENDING
+                ps.setTimestamp(8, new Timestamp(System.currentTimeMillis()));
                 
                 int rowsAffected = ps.executeUpdate();
                 
@@ -223,6 +225,27 @@ public class OrderDAO {
     }
     
     /**
+     * Cập nhật payment status và transaction ID
+     */
+    public boolean updateOrderPaymentStatus(int orderId, String paymentStatus, String transactionId) {
+        String sql = "UPDATE orders SET payment_status = ?, vnp_transaction_id = ?, updated_at = GETDATE() WHERE order_id = ?";
+        
+        try (Connection conn = dbConnection.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            
+            ps.setString(1, paymentStatus);
+            ps.setString(2, transactionId);
+            ps.setInt(3, orderId);
+            
+            int rowsAffected = ps.executeUpdate();
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error updating order payment status", e);
+            return false;
+        }
+    }
+    
+    /**
      * Lấy order items theo order ID
      */
     private List<OrderItem> getOrderItemsByOrderId(int orderId) {
@@ -302,8 +325,29 @@ public class OrderDAO {
         order.setShippingAddress(rs.getString("shipping_address"));
         order.setPhone(rs.getString("phone"));
         order.setStatus(rs.getString("status"));
-        // payment_method và notes không có trong schema, set null
-        order.setPaymentMethod(null);
+        
+        // Lấy payment_method và payment_status nếu có
+        try {
+            order.setPaymentMethod(rs.getString("payment_method"));
+        } catch (SQLException e) {
+            // Column không tồn tại, set null
+            order.setPaymentMethod(null);
+        }
+        
+        try {
+            order.setPaymentStatus(rs.getString("payment_status"));
+        } catch (SQLException e) {
+            // Column không tồn tại, set null
+            order.setPaymentStatus(null);
+        }
+        
+        try {
+            order.setVnpTransactionId(rs.getString("vnp_transaction_id"));
+        } catch (SQLException e) {
+            // Column không tồn tại, set null
+            order.setVnpTransactionId(null);
+        }
+        
         order.setNotes(null);
         order.setOrderDate(rs.getTimestamp("order_date"));
         return order;
