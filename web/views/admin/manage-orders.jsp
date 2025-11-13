@@ -97,7 +97,11 @@
 
 <jsp:include page="../common/footer.jsp"/>
 
-
-
-
+<script>
+    function viewOrderDetails(orderId) {
+        if (orderId) {
+            window.location.href = '${pageContext.request.contextPath}/admin/orders/detail?orderId=' + orderId;
+        }
+    }
+</script>
 

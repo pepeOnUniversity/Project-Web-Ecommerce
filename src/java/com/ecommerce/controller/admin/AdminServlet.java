@@ -19,7 +19,7 @@ import java.util.List;
  * Admin Servlet
  * Xử lý admin dashboard và quản lý
  */
-@WebServlet(name = "AdminServlet", urlPatterns = {"/admin", "/admin/dashboard", "/admin/orders"})
+@WebServlet(name = "AdminServlet", urlPatterns = {"/admin", "/admin/dashboard", "/admin/orders", "/admin/orders/detail"})
 public class AdminServlet extends HttpServlet {
     
     private ProductDAO productDAO;
@@ -45,6 +45,8 @@ public class AdminServlet extends HttpServlet {
             showDashboard(request, response);
         } else if ("/admin/orders".equals(path)) {
             showManageOrders(request, response);
+        } else if ("/admin/orders/detail".equals(path)) {
+            showOrderDetail(request, response);
         }
     }
     
@@ -121,6 +123,40 @@ public class AdminServlet extends HttpServlet {
     }
     
     /**
+     * Hiển thị chi tiết đơn hàng
+     */
+    private void showOrderDetail(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        
+        try {
+            String orderIdStr = request.getParameter("orderId");
+            if (orderIdStr == null || orderIdStr.trim().isEmpty()) {
+                response.sendRedirect(request.getContextPath() + "/admin/orders?error=invalid_order");
+                return;
+            }
+            
+            int orderId = Integer.parseInt(orderIdStr);
+            Order order = orderDAO.getOrderById(orderId);
+            
+            if (order == null) {
+                response.sendRedirect(request.getContextPath() + "/admin/orders?error=order_not_found");
+                return;
+            }
+            
+            request.setAttribute("order", order);
+            request.getRequestDispatcher("/views/admin/order-detail.jsp").forward(request, response);
+            
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
+            response.sendRedirect(request.getContextPath() + "/admin/orders?error=invalid_order");
+        } catch (Exception e) {
+            e.printStackTrace();
+            request.setAttribute("error", "Có lỗi xảy ra khi tải chi tiết đơn hàng");
+            request.getRequestDispatcher("/views/error.jsp").forward(request, response);
+        }
+    }
+    
+    /**
      * Cập nhật trạng thái đơn hàng
      */
     private void handleUpdateOrderStatus(HttpServletRequest request, HttpServletResponse response)
@@ -129,16 +165,31 @@ public class AdminServlet extends HttpServlet {
         try {
             int orderId = Integer.parseInt(request.getParameter("orderId"));
             String status = request.getParameter("status");
+            String returnToDetail = request.getParameter("returnToDetail"); // Check if coming from detail page
             
             if (orderDAO.updateOrderStatus(orderId, status)) {
-                response.sendRedirect(request.getContextPath() + "/admin/orders?success=true");
+                if ("true".equals(returnToDetail)) {
+                    response.sendRedirect(request.getContextPath() + "/admin/orders/detail?orderId=" + orderId + "&success=true");
+                } else {
+                    response.sendRedirect(request.getContextPath() + "/admin/orders?success=true");
+                }
             } else {
-                response.sendRedirect(request.getContextPath() + "/admin/orders?error=true");
+                if ("true".equals(returnToDetail)) {
+                    response.sendRedirect(request.getContextPath() + "/admin/orders/detail?orderId=" + orderId + "&error=true");
+                } else {
+                    response.sendRedirect(request.getContextPath() + "/admin/orders?error=true");
+                }
             }
             
         } catch (Exception e) {
             e.printStackTrace();
-            response.sendRedirect(request.getContextPath() + "/admin/orders?error=true");
+            String orderIdStr = request.getParameter("orderId");
+            String returnToDetail = request.getParameter("returnToDetail");
+            if ("true".equals(returnToDetail) && orderIdStr != null) {
+                response.sendRedirect(request.getContextPath() + "/admin/orders/detail?orderId=" + orderIdStr + "&error=true");
+            } else {
+                response.sendRedirect(request.getContextPath() + "/admin/orders?error=true");
+            }
         }
     }
 }

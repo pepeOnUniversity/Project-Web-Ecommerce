@@ -99,6 +99,7 @@ public class OrderDAO {
             
             while (rs.next()) {
                 Order order = mapResultSetToOrder(rs);
+                order.setUser(mapResultSetToUser(rs));
                 order.setOrderItems(getOrderItemsByOrderId(order.getOrderId()));
                 orders.add(order);
             }
